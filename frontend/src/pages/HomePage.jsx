@@ -16,7 +16,6 @@ export default function HomePage() {
   const [stats, setStats] = useState(null);
   const [filters, setFilters] = useState({
     region: "all",
-    map: "all",
     status: "all",
   });
   const [loading, setLoading] = useState(true);
@@ -25,7 +24,6 @@ export default function HomePage() {
     try {
       const params = {};
       if (filters.region !== "all") params.region = filters.region;
-      if (filters.map !== "all") params.map_name = filters.map;
       if (filters.status !== "all") params.status = filters.status;
       const res = await axios.get(`${API}/sessions`, { params });
       setSessions(res.data);

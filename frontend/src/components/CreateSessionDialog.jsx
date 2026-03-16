@@ -29,11 +29,8 @@ export const CreateSessionDialog = ({ open, onOpenChange }) => {
   const [form, setForm] = useState({
     title: "",
     match_code: "",
-    map_name: "Verdansk",
     region: "NA",
-    game_mode: "Battle Royale",
     platform: "Cross-play",
-    min_players: 24,
   });
 
   const handleSubmit = async (e) => {
@@ -112,96 +109,28 @@ export const CreateSessionDialog = ({ open, onOpenChange }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wider font-mono text-muted-foreground">
-                Map
-              </Label>
-              <Select
-                value={form.map_name}
-                onValueChange={(v) => setForm({ ...form, map_name: v })}
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-wider font-mono text-muted-foreground">
+              Region
+            </Label>
+            <Select
+              value={form.region}
+              onValueChange={(v) => setForm({ ...form, region: v })}
+            >
+              <SelectTrigger
+                className="bg-secondary/50 border-white/10 text-xs font-mono"
+                data-testid="create-region-select"
               >
-                <SelectTrigger
-                  className="bg-secondary/50 border-white/10 text-xs font-mono"
-                  data-testid="create-map-select"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Verdansk">Verdansk</SelectItem>
-                  <SelectItem value="Rebirth Island">Rebirth Island</SelectItem>
-                  <SelectItem value="Ashika Island">Ashika Island</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wider font-mono text-muted-foreground">
-                Region
-              </Label>
-              <Select
-                value={form.region}
-                onValueChange={(v) => setForm({ ...form, region: v })}
-              >
-                <SelectTrigger
-                  className="bg-secondary/50 border-white/10 text-xs font-mono"
-                  data-testid="create-region-select"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="NA">North America</SelectItem>
-                  <SelectItem value="EU">Europe</SelectItem>
-                  <SelectItem value="ASIA">Asia</SelectItem>
-                  <SelectItem value="OCE">Oceania</SelectItem>
-                  <SelectItem value="SA">South America</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wider font-mono text-muted-foreground">
-                Game Mode
-              </Label>
-              <Select
-                value={form.game_mode}
-                onValueChange={(v) => setForm({ ...form, game_mode: v })}
-              >
-                <SelectTrigger
-                  className="bg-secondary/50 border-white/10 text-xs font-mono"
-                  data-testid="create-mode-select"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Battle Royale">Battle Royale</SelectItem>
-                  <SelectItem value="Plunder">Plunder</SelectItem>
-                  <SelectItem value="Resurgence">Resurgence</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wider font-mono text-muted-foreground">
-                Min Players
-              </Label>
-              <Input
-                type="number"
-                value={form.min_players}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    min_players: parseInt(e.target.value) || 24,
-                  })
-                }
-                min={2}
-                max={150}
-                className="bg-secondary/50 border-white/10 font-mono text-sm"
-                data-testid="create-minplayers-input"
-              />
-            </div>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NA">North America</SelectItem>
+                <SelectItem value="EU">Europe</SelectItem>
+                <SelectItem value="ASIA">Asia</SelectItem>
+                <SelectItem value="OCE">Oceania</SelectItem>
+                <SelectItem value="SA">South America</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <Button

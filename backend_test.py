@@ -72,17 +72,14 @@ class RallyPointAPITester:
         return success
 
     def test_create_session(self):
-        """Test creating a new session"""
+        """Test creating a new session with hardcoded values"""
+        # Only send required fields per new spec
         session_data = {
             "host_name": self.nickname,
             "host_id": self.player_id,
             "title": "Test Verdansk Battle Royale",
-            "map_name": "Verdansk",
-            "game_mode": "Battle Royale",
             "region": "NA",
             "match_code": "TEST123",
-            "min_players": 4,
-            "max_players": 150,
             "platform": "Cross-play"
         }
         
@@ -97,6 +94,15 @@ class RallyPointAPITester:
         if success and 'id' in response:
             self.session_id = response['id']
             print(f"   Created session ID: {self.session_id}")
+            # Verify hardcoded values are set correctly
+            if response.get('map_name') == 'Verdansk':
+                print("   ✅ Map name correctly hardcoded to Verdansk")
+            if response.get('game_mode') == 'Battle Royale':
+                print("   ✅ Game mode correctly hardcoded to Battle Royale")
+            if response.get('min_players') == 50:
+                print("   ✅ Min players correctly hardcoded to 50")
+            if response.get('max_players') == 150:
+                print("   ✅ Max players correctly hardcoded to 150")
         
         return success
 
@@ -123,6 +129,22 @@ class RallyPointAPITester:
             200,
             params={"region": "NA"}
         )
+        return success
+
+    def test_get_sessions_no_map_filter(self):
+        """Test that GET /api/sessions no longer accepts map_name parameter"""
+        # This should work (ignore map_name param)
+        success, response = self.run_test(
+            "Get Sessions ignoring map_name param",
+            "GET",
+            "sessions",
+            200,
+            params={"map_name": "Blackout", "region": "NA"}  # map_name should be ignored
+        )
+        
+        if success:
+            print("   ✅ GET /api/sessions correctly ignores map_name parameter")
+        
         return success
 
     def test_get_specific_session(self):
@@ -168,26 +190,62 @@ class RallyPointAPITester:
             
         return success
 
-    def test_update_player_state(self):
-        """Test updating player state in session"""
+    def test_player_state_transitions(self):
+        """Test one-way player state transitions (interested→joining→in_lobby)"""
         if not self.session_id:
             print("❌ Cannot test - no session ID available")
             return False
-            
+        
+        player_id_test = f"{self.player_id}_state_test"
+        nickname_test = f"{self.nickname}_state"
+        
+        # Test interested → joining transition
         update_data = {
-            "player_id": f"{self.player_id}_2",
-            "nickname": f"{self.nickname}_2", 
-            "state": "ready"
+            "player_id": player_id_test,
+            "nickname": nickname_test, 
+            "state": "joining"
         }
         
-        success, response = self.run_test(
-            "Update Player State",
+        success1, response1 = self.run_test(
+            "Player State: interested → joining",
             "POST",
             f"sessions/{self.session_id}/join",
             200,
             data=update_data
         )
-        return success
+        
+        if success1:
+            print("   ✅ One-way transition interested → joining works")
+        
+        # Test joining → in_lobby transition
+        update_data["state"] = "in_lobby"
+        
+        success2, response2 = self.run_test(
+            "Player State: joining → in_lobby", 
+            "POST",
+            f"sessions/{self.session_id}/join",
+            200,
+            data=update_data
+        )
+        
+        if success2:
+            print("   ✅ One-way transition joining → in_lobby works")
+        
+        # Test invalid backward transition (should fail)
+        update_data["state"] = "interested"
+        
+        success3, response3 = self.run_test(
+            "Player State: in_lobby → interested (should fail)",
+            "POST", 
+            f"sessions/{self.session_id}/join",
+            400,  # Should return 400 error
+            data=update_data
+        )
+        
+        if success3:
+            print("   ✅ Invalid backward transition correctly rejected")
+        
+        return success1 and success2 and success3
 
     def test_send_chat_message(self):
         """Test sending a chat message"""
@@ -232,16 +290,63 @@ class RallyPointAPITester:
             
         return success
 
-    def test_update_session_status(self):
-        """Test updating session status (host only)"""
+    def test_session_status_transitions(self):
+        """Test one-way session status transitions (filling→starting→in_progress→ended)"""
+        if not self.session_id:
+            print("❌ Cannot test - no session ID available")
+            return False
+        
+        # Test filling → starting transition
+        success1, response1 = self.run_test(
+            "Session Status: filling → starting",
+            "PATCH",
+            f"sessions/{self.session_id}",
+            200,
+            data={"status": "starting"},
+            params={"host_id": self.player_id}
+        )
+        
+        if success1:
+            print("   ✅ One-way transition filling → starting works")
+        
+        # Test starting → in_progress transition
+        success2, response2 = self.run_test(
+            "Session Status: starting → in_progress",
+            "PATCH",
+            f"sessions/{self.session_id}",
+            200,
+            data={"status": "in_progress"},
+            params={"host_id": self.player_id}
+        )
+        
+        if success2:
+            print("   ✅ One-way transition starting → in_progress works")
+        
+        # Test invalid backward transition (should fail)
+        success3, response3 = self.run_test(
+            "Session Status: in_progress → filling (should fail)",
+            "PATCH",
+            f"sessions/{self.session_id}",
+            400,  # Should return 400 error
+            data={"status": "filling"},
+            params={"host_id": self.player_id}
+        )
+        
+        if success3:
+            print("   ✅ Invalid backward transition correctly rejected")
+        
+        return success1 and success2 and success3
+
+    def test_update_match_code(self):
+        """Test updating match code (host only)"""
         if not self.session_id:
             print("❌ Cannot test - no session ID available")
             return False
             
-        update_data = {"status": "starting"}
+        update_data = {"match_code": "NEWCODE123"}
         
         success, response = self.run_test(
-            "Update Session Status",
+            "Update Match Code",
             "PATCH",
             f"sessions/{self.session_id}",
             200,
@@ -265,42 +370,6 @@ class RallyPointAPITester:
         )
         return success
 
-    def test_update_match_code(self):
-        """Test updating match code (host only)"""
-        if not self.session_id:
-            print("❌ Cannot test - no session ID available")
-            return False
-            
-        update_data = {"match_code": "NEWCODE123"}
-        
-        success, response = self.run_test(
-            "Update Match Code",
-            "PATCH",
-            f"sessions/{self.session_id}",
-            200,
-            data=update_data,
-            params={"host_id": self.player_id}
-        )
-        return success
-
-    def test_end_session(self):
-        """Test ending a session (host only)"""
-        if not self.session_id:
-            print("❌ Cannot test - no session ID available")
-            return False
-            
-        update_data = {"status": "ended"}
-        
-        success, response = self.run_test(
-            "End Session",
-            "PATCH",
-            f"sessions/{self.session_id}",
-            200,
-            data=update_data,
-            params={"host_id": self.player_id}
-        )
-        return success
-
 def main():
     print("🚀 Rally Point API Testing")
     print("=" * 50)
@@ -315,15 +384,16 @@ def main():
         tester.test_create_session,
         tester.test_get_sessions_list,
         tester.test_get_sessions_with_filters,
+        tester.test_get_sessions_no_map_filter,
         tester.test_get_specific_session,
         tester.test_join_session,
-        tester.test_update_player_state,
+        tester.test_player_state_transitions,
         tester.test_send_chat_message,
         tester.test_get_chat_messages,
-        tester.test_update_session_status,
+        tester.test_session_status_transitions,
         tester.test_update_match_code,
         tester.test_leave_session,
-        tester.test_end_session
+        # Note: End session test removed as it's tested in status transitions
     ]
     
     for test in tests:

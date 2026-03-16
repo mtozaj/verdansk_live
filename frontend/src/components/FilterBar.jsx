@@ -30,24 +30,6 @@ export const FilterBar = ({ filters, onChange }) => {
       </Select>
 
       <Select
-        value={filters.map}
-        onValueChange={(v) => onChange({ ...filters, map: v })}
-      >
-        <SelectTrigger
-          className="w-[140px] h-9 bg-secondary/50 border-white/10 text-xs font-mono"
-          data-testid="filter-map"
-        >
-          <SelectValue placeholder="Map" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Maps</SelectItem>
-          <SelectItem value="Verdansk">Verdansk</SelectItem>
-          <SelectItem value="Rebirth Island">Rebirth Island</SelectItem>
-          <SelectItem value="Ashika Island">Ashika Island</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select
         value={filters.status}
         onValueChange={(v) => onChange({ ...filters, status: v })}
       >

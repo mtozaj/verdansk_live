@@ -56,11 +56,8 @@ export const SessionCard = ({ session, featured }) => {
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             {session.status !== "ended" && <div className="live-dot" />}
-            <span className="font-heading font-bold text-sm uppercase tracking-wide text-foreground">
-              {session.map_name}
-            </span>
-            <span className="text-muted-foreground text-xs font-mono">
-              / {session.game_mode}
+            <span className="font-heading font-bold text-sm uppercase tracking-wide text-primary/80">
+              Verdansk
             </span>
           </div>
           <Badge

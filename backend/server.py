@@ -28,13 +28,24 @@ class SessionCreate(BaseModel):
     host_name: str
     host_id: str
     title: str
-    map_name: str = "Verdansk"
-    game_mode: str = "Battle Royale"
     region: str = "NA"
     match_code: str
-    min_players: int = 24
-    max_players: int = 150
     platform: str = "Cross-play"
+
+
+# Strict one-way status transitions (no going back)
+VALID_STATUS_TRANSITIONS = {
+    "filling": ["starting", "ended"],
+    "starting": ["in_progress", "ended"],
+    "in_progress": ["ended"],
+}
+
+# Strict one-way player state transitions
+VALID_STATE_FORWARD = {
+    "interested": ["joining"],
+    "joining": ["in_lobby"],
+    "in_lobby": [],
+}
 
 
 class SessionUpdate(BaseModel):
@@ -92,7 +103,7 @@ def clean(doc):
     doc.pop("_id", None)
     ps = doc.get("players", [])
     doc["player_count"] = len(ps)
-    doc["ready_count"] = sum(1 for p in ps if p.get("state") in ("ready", "joining", "in_lobby"))
+    doc["ready_count"] = sum(1 for p in ps if p.get("state") in ("joining", "in_lobby"))
     doc["in_lobby_count"] = sum(1 for p in ps if p.get("state") == "in_lobby")
     return doc
 
@@ -116,13 +127,13 @@ async def create_session(data: SessionCreate):
         "host_name": data.host_name,
         "host_id": data.host_id,
         "title": data.title,
-        "map_name": data.map_name,
-        "game_mode": data.game_mode,
+        "map_name": "Verdansk",
+        "game_mode": "Battle Royale",
         "region": data.region,
         "match_code": data.match_code,
         "status": "filling",
-        "min_players": data.min_players,
-        "max_players": data.max_players,
+        "min_players": 50,
+        "max_players": 150,
         "platform": data.platform,
         "players": [
             {
@@ -151,15 +162,12 @@ async def create_session(data: SessionCreate):
 async def list_sessions(
     region: Optional[str] = None,
     status: Optional[str] = None,
-    map_name: Optional[str] = None,
 ):
     q: dict = {"status": {"$nin": ["ended"]}}
     if region:
         q["region"] = region
     if status:
         q["status"] = status
-    if map_name:
-        q["map_name"] = map_name
 
     sessions = await db.sessions.find(q, {"_id": 0}).sort("updated_at", -1).to_list(100)
     return [clean(s) for s in sessions]
@@ -185,6 +193,13 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
     if data.match_code is not None:
         upd["match_code"] = data.match_code
     if data.status is not None:
+        current_status = s.get("status", "filling")
+        allowed_statuses = VALID_STATUS_TRANSITIONS.get(current_status, [])
+        if data.status not in allowed_statuses:
+            raise HTTPException(
+                400,
+                f"Cannot transition from '{current_status}' to '{data.status}'",
+            )
         upd["status"] = data.status
         if data.status in ("starting", "in_progress"):
             await db.host_stats.update_one(
@@ -215,6 +230,13 @@ async def join_session(sid: str, data: PlayerAction):
     )
 
     if existing:
+        current_state = existing.get("state")
+        allowed = VALID_STATE_FORWARD.get(current_state, [])
+        if data.state != current_state and data.state not in allowed:
+            raise HTTPException(
+                400,
+                f"Cannot transition from '{current_state}' to '{data.state}'",
+            )
         await db.sessions.update_one(
             {"id": sid, "players.player_id": data.player_id},
             {
@@ -226,6 +248,8 @@ async def join_session(sid: str, data: PlayerAction):
             },
         )
     else:
+        if data.state not in ("interested", "joining"):
+            data.state = "interested"
         await db.sessions.update_one(
             {"id": sid},
             {

@@ -16,6 +16,7 @@ import {
   Play,
   Square,
   RefreshCw,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,16 +65,8 @@ const STATUS_MAP = {
   },
 };
 
-const PLAYER_STATES = [
-  { key: "interested", label: "Interested", icon: CircleDot },
-  { key: "ready", label: "Ready", icon: Target },
-  { key: "joining", label: "Joining", icon: Radio },
-  { key: "in_lobby", label: "In Lobby", icon: Check },
-];
-
 const STATE_COLORS = {
   interested: "bg-yellow-500",
-  ready: "bg-green-500",
   joining: "bg-green-400",
   in_lobby: "bg-emerald-500",
 };
@@ -232,6 +225,10 @@ export default function SessionPage() {
     (session.ready_count / session.min_players) * 100,
     100
   );
+  const codeUnlocked =
+    isHost ||
+    myPlayer?.state === "joining" ||
+    myPlayer?.state === "in_lobby";
 
   return (
     <div className="min-h-screen" data-testid="session-page">
@@ -262,7 +259,7 @@ export default function SessionPage() {
                   <div className="flex items-center gap-2 mb-1">
                     {session.status !== "ended" && <div className="live-dot" />}
                     <span className="font-heading text-sm uppercase tracking-wide text-muted-foreground">
-                      {session.map_name} / {session.game_mode}
+                      Verdansk Private Match
                     </span>
                   </div>
                   <h1
@@ -309,26 +306,41 @@ export default function SessionPage() {
               <h3 className="font-heading text-sm uppercase tracking-wider text-muted-foreground mb-3">
                 Match Code
               </h3>
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex-1 bg-black/40 border border-primary/30 px-4 py-3 font-mono text-xl md:text-2xl tracking-widest text-primary font-bold select-all"
-                  data-testid="match-code-display"
-                >
-                  {session.match_code}
+              {codeUnlocked ? (
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex-1 bg-black/40 border border-primary/30 px-4 py-3 font-mono text-xl md:text-2xl tracking-widest text-primary font-bold select-all"
+                    data-testid="match-code-display"
+                  >
+                    {session.match_code}
+                  </div>
+                  <Button
+                    onClick={copyCode}
+                    variant="outline"
+                    className="border-primary/50 text-primary hover:bg-primary hover:text-black h-12 px-4 uppercase tracking-widest font-bold text-xs"
+                    data-testid="copy-code-btn"
+                  >
+                    {copied ? (
+                      <Check className="w-4 h-4" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
                 </div>
-                <Button
-                  onClick={copyCode}
-                  variant="outline"
-                  className="border-primary/50 text-primary hover:bg-primary hover:text-black h-12 px-4 uppercase tracking-widest font-bold text-xs"
-                  data-testid="copy-code-btn"
+              ) : (
+                <div
+                  className="bg-black/40 border border-white/10 px-4 py-6 text-center"
+                  data-testid="match-code-locked"
                 >
-                  {copied ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
+                  <Lock className="w-5 h-5 text-muted-foreground mx-auto mb-2" />
+                  <p className="font-mono text-sm text-muted-foreground">
+                    Code is locked
+                  </p>
+                  <p className="font-mono text-xs text-muted-foreground/60 mt-1">
+                    Commit to joining to unlock the match code
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Progress */}
@@ -370,36 +382,92 @@ export default function SessionPage() {
                   Your Status
                 </h3>
                 {!hasJoined ? (
-                  <Button
-                    onClick={() => joinSession("interested")}
-                    className="uppercase tracking-widest font-bold text-xs active:scale-95 glow-primary"
-                    data-testid="join-session-btn"
-                  >
-                    Join Session
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => joinSession("interested")}
+                      className="uppercase tracking-widest font-bold text-xs active:scale-95 glow-primary"
+                      data-testid="join-session-btn"
+                    >
+                      I'm Interested
+                    </Button>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      Join to follow this session. Commit to joining to unlock
+                      the match code.
+                    </p>
+                  </div>
+                ) : myPlayer?.state === "interested" ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                      <span className="font-mono text-xs text-yellow-500 uppercase tracking-wider">
+                        Interested
+                      </span>
+                    </div>
+                    <Button
+                      onClick={() => updateState("joining")}
+                      className="uppercase tracking-widest font-bold text-xs active:scale-95 bg-green-600 hover:bg-green-700 text-white"
+                      data-testid="state-btn-joining"
+                    >
+                      <Lock className="w-3 h-3 mr-1.5" />
+                      Commit to Joining — Unlock Code
+                    </Button>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      This will reveal the private match code to you.
+                    </p>
+                    {!isHost && (
+                      <Button
+                        onClick={leaveSession}
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive text-xs"
+                        data-testid="leave-session-btn"
+                      >
+                        Leave Session
+                      </Button>
+                    )}
+                  </div>
+                ) : myPlayer?.state === "joining" ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-2 h-2 rounded-full bg-green-400" />
+                      <span className="font-mono text-xs text-green-400 uppercase tracking-wider">
+                        Joining — Code Unlocked
+                      </span>
+                    </div>
+                    <Button
+                      onClick={() => updateState("in_lobby")}
+                      className="uppercase tracking-widest font-bold text-xs active:scale-95 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      data-testid="state-btn-in_lobby"
+                    >
+                      <Check className="w-3 h-3 mr-1.5" />
+                      I'm In The Lobby
+                    </Button>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      Confirm once you've entered the private match lobby.
+                    </p>
+                    {!isHost && (
+                      <Button
+                        onClick={leaveSession}
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive text-xs"
+                        data-testid="leave-session-btn"
+                      >
+                        Leave Session
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      {PLAYER_STATES.map(({ key, label, icon: Icon }) => (
-                        <Button
-                          key={key}
-                          onClick={() => updateState(key)}
-                          variant={
-                            myPlayer?.state === key ? "default" : "outline"
-                          }
-                          size="sm"
-                          className={`uppercase tracking-widest font-bold text-[10px] ${
-                            myPlayer?.state === key
-                              ? "glow-primary"
-                              : "border-white/10 text-muted-foreground hover:border-primary/50 hover:text-primary"
-                          }`}
-                          data-testid={`state-btn-${key}`}
-                        >
-                          <Icon className="w-3 h-3 mr-1" />
-                          {label}
-                        </Button>
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                      <span className="font-mono text-sm text-emerald-400 uppercase tracking-wider font-bold">
+                        In The Lobby
+                      </span>
                     </div>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      You're in. Waiting for the host to start the match.
+                    </p>
                     {!isHost && (
                       <Button
                         onClick={leaveSession}
@@ -456,8 +524,7 @@ export default function SessionPage() {
                         <Play className="w-3 h-3 mr-1" /> Start Match
                       </Button>
                     )}
-                    {(session.status === "starting" ||
-                      session.status === "almost_full") && (
+                    {session.status === "starting" && (
                       <Button
                         onClick={() => updateSessionStatus("in_progress")}
                         size="sm"
