@@ -2,14 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
+import { Send, MessageSquare } from "lucide-react";
 
 function timeStr(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export const ChatFeed = ({ messages, onSend, currentPlayerId }) => {
+export const ChatFeed = ({ messages, onSend, currentPlayerId, unreadCount = 0 }) => {
   const [text, setText] = useState("");
   const bottomRef = useRef(null);
 
@@ -30,9 +30,20 @@ export const ChatFeed = ({ messages, onSend, currentPlayerId }) => {
 
   return (
     <div className="flex flex-col h-full" data-testid="chat-feed">
-      <h3 className="font-heading text-sm uppercase tracking-wider text-muted-foreground mb-2 px-1">
-        Comms
-      </h3>
+      <div className="flex items-center gap-2 mb-2 px-1">
+        <MessageSquare className="w-4 h-4 text-primary" />
+        <h3 className="font-heading text-sm uppercase tracking-wider text-foreground font-bold">
+          Chat
+        </h3>
+        {unreadCount > 0 && (
+          <div className="flex items-center gap-1.5" data-testid="chat-unread-badge">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="font-mono text-[10px] text-primary font-bold">
+              {unreadCount}
+            </span>
+          </div>
+        )}
+      </div>
       <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-1.5 pr-3 pb-2">
           {messages.length === 0 && (

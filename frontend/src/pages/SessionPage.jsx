@@ -19,6 +19,7 @@ import {
   Lock,
   AlertTriangle,
   RotateCcw,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -111,7 +112,9 @@ export default function SessionPage() {
   const [resetCode, setResetCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [codeChanged, setCodeChanged] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const codeChangedTimer = useRef(null);
+  const chatSectionRef = useRef(null);
 
   const isHost = session?.host_id === playerId;
   const myPlayer = session?.players?.find((p) => p.player_id === playerId);
@@ -136,10 +139,30 @@ export default function SessionPage() {
     load();
   }, [id, navigate]);
 
+  const chatVisibleRef = useRef(false);
+
+  // Track chat section visibility
+  useEffect(() => {
+    if (!chatSectionRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        chatVisibleRef.current = entry.isIntersecting;
+        if (entry.isIntersecting) setUnreadCount(0);
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(chatSectionRef.current);
+    return () => observer.disconnect();
+  }, [loading]);
+
   const handleWs = useCallback((data) => {
     if (data.type === "session_updated") setSession(data.session);
-    if (data.type === "chat_message")
+    if (data.type === "chat_message") {
       setMessages((prev) => [...prev, data.message]);
+      if (!chatVisibleRef.current) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    }
     if (data.type === "code_changed") {
       toast.info("Match code has been updated!");
       setCodeChanged(true);
@@ -787,17 +810,39 @@ export default function SessionPage() {
 
             {/* Chat */}
             <div
-              className="bg-card border border-white/5 p-5 h-80"
+              ref={chatSectionRef}
+              className="bg-card border border-primary/20 p-5 h-80"
               data-testid="chat-section"
             >
               <ChatFeed
                 messages={messages}
                 onSend={sendChat}
                 currentPlayerId={playerId}
+                unreadCount={unreadCount}
               />
             </div>
           </div>
         </div>
+
+        {/* Floating chat bubble — mobile only */}
+        <button
+          className="lg:hidden fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-primary text-black flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+          onClick={() => {
+            chatSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+            setUnreadCount(0);
+          }}
+          data-testid="chat-fab"
+        >
+          <MessageSquare className="w-6 h-6" />
+          {unreadCount > 0 && (
+            <span
+              className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse"
+              data-testid="chat-fab-badge"
+            >
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </button>
       </main>
     </div>
   );
