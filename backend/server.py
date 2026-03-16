@@ -105,6 +105,7 @@ def clean(doc):
     doc["player_count"] = len(ps)
     doc["ready_count"] = sum(1 for p in ps if p.get("state") in ("joining", "in_lobby"))
     doc["in_lobby_count"] = sum(1 for p in ps if p.get("state") == "in_lobby")
+    doc["host_inactive"] = doc.get("host_inactive", False)
     return doc
 
 
@@ -145,6 +146,8 @@ async def create_session(data: SessionCreate):
         ],
         "created_at": now,
         "updated_at": now,
+        "host_last_heartbeat": now,
+        "host_inactive": False,
         "host_sessions_count": hosted + 1,
         "host_success_rate": round(launched / max(hosted, 1), 2),
     }
@@ -362,6 +365,26 @@ async def ws_session(ws: WebSocket, sid: str):
             data = await ws.receive_text()
             if data == "ping":
                 await ws.send_json({"type": "pong"})
+            else:
+                try:
+                    import json
+                    msg = json.loads(data)
+                    if msg.get("type") == "host_heartbeat":
+                        player_id = msg.get("player_id")
+                        s = await db.sessions.find_one({"id": sid})
+                        if s and s.get("host_id") == player_id:
+                            now = datetime.now(timezone.utc).isoformat()
+                            upd = {"host_last_heartbeat": now}
+                            if s.get("host_inactive"):
+                                upd["host_inactive"] = False
+                            await db.sessions.update_one({"id": sid}, {"$set": upd})
+                            if s.get("host_inactive"):
+                                updated = await db.sessions.find_one({"id": sid}, {"_id": 0})
+                                result = clean(updated)
+                                await mgr.broadcast(room, {"type": "session_updated", "session": result})
+                                await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
+                except Exception:
+                    pass
     except (WebSocketDisconnect, Exception):
         mgr.disconnect(room, ws)
 
@@ -388,7 +411,9 @@ logger = logging.getLogger(__name__)
 async def staleness_cleanup():
     while True:
         try:
-            cutoff = (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat()
+            now = datetime.now(timezone.utc)
+            cutoff = (now - timedelta(minutes=30)).isoformat()
+            # Auto-end filling/almost_full sessions after 30 min inactivity
             await db.sessions.update_many(
                 {
                     "status": {"$in": ["filling", "almost_full"]},
@@ -396,11 +421,43 @@ async def staleness_cleanup():
                 },
                 {"$set": {"status": "ended"}},
             )
-            long_cutoff = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+            # Auto-end starting sessions after 30 min inactivity
+            await db.sessions.update_many(
+                {
+                    "status": "starting",
+                    "updated_at": {"$lt": cutoff},
+                },
+                {"$set": {"status": "ended"}},
+            )
+            # Auto-end in_progress sessions after 2 hours
+            long_cutoff = (now - timedelta(hours=2)).isoformat()
             await db.sessions.update_many(
                 {"status": "in_progress", "updated_at": {"$lt": long_cutoff}},
                 {"$set": {"status": "ended"}},
             )
+
+            # Host heartbeat check — flag inactive after 5 min
+            heartbeat_cutoff = (now - timedelta(minutes=5)).isoformat()
+            inactive_sessions = await db.sessions.find(
+                {
+                    "status": {"$nin": ["ended"]},
+                    "host_inactive": {"$ne": True},
+                    "host_last_heartbeat": {"$lt": heartbeat_cutoff},
+                },
+                {"_id": 0},
+            ).to_list(100)
+
+            for s in inactive_sessions:
+                await db.sessions.update_one(
+                    {"id": s["id"]},
+                    {"$set": {"host_inactive": True}},
+                )
+                updated = await db.sessions.find_one({"id": s["id"]}, {"_id": 0})
+                result = clean(updated)
+                await mgr.broadcast(f"session:{s['id']}", {"type": "session_updated", "session": result})
+                await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
+                logger.info(f"Flagged session {s['id']} as host_inactive")
+
         except Exception as e:
             logger.error(f"Staleness cleanup: {e}")
         await asyncio.sleep(60)

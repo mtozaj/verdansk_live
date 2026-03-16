@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { MapPin, Users, Clock, Shield, ChevronRight } from "lucide-react";
+import { MapPin, Users, Clock, Shield, ChevronRight, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
@@ -120,8 +120,16 @@ export const SessionCard = ({ session, featured }) => {
           <span className="text-xs text-muted-foreground font-mono">
             {session.platform}
           </span>
-          <div className="flex items-center gap-1 text-primary text-xs font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            Join <ChevronRight className="w-3 h-3" />
+          <div className="flex items-center gap-2">
+            {session.host_inactive && (
+              <div className="flex items-center gap-1 text-yellow-500 text-xs font-mono" data-testid={`host-inactive-${session.id}`}>
+                <AlertTriangle className="w-3 h-3" />
+                <span className="uppercase tracking-wider text-[10px] font-bold">Host Inactive</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1 text-primary text-xs font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              Join <ChevronRight className="w-3 h-3" />
+            </div>
           </div>
         </div>
       </div>

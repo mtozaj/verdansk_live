@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const WS_BASE = BACKEND_URL.replace("https://", "wss://").replace(
@@ -64,5 +64,11 @@ export function useWebSocket(path, onMessage) {
     };
   }, [path]);
 
-  return { connected };
+  const send = useCallback((data) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(typeof data === "string" ? data : JSON.stringify(data));
+    }
+  }, []);
+
+  return { connected, send };
 }

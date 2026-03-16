@@ -39,7 +39,16 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 - [x] Fixed NicknamePrompt not appearing after rules dismissal (React Hooks violation — usePlayer() called after early return)
 - [x] Fixed auto-scroll bug on SessionPage — ChatFeed's scrollIntoView was scrolling the entire page on mobile/zoomed views
 
-## Testing Results
+### Phase 4 (2026-03-16) - Host Heartbeat & Staleness
+- [x] Host heartbeat system — browser sends ping every 60s via WebSocket
+- [x] Auto-flag sessions as "Host Inactive" after 5 min of no heartbeat
+- [x] Yellow warning banner on session page when host is inactive
+- [x] "Host Inactive" indicator on session cards in homepage
+- [x] Host returning auto-clears the inactive flag
+- [x] Fixed "starting" status sessions not being auto-expired (30 min timeout)
+- [x] Updated page title & OG meta tags for proper link previews (Rally Point branding)
+- [x] Generated OG preview image for social sharing
+- [x] Removed Emergent badge via MutationObserver
 - Backend: 100% (18/18 tests)
 - Frontend: 100%
 - Integration: 100%

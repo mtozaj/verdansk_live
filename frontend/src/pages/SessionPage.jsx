@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import {
   Square,
   RefreshCw,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -111,7 +112,22 @@ export default function SessionPage() {
       setMessages((prev) => [...prev, data.message]);
   }, []);
 
-  useWebSocket(`/api/ws/session/${id}`, handleWs);
+  const { send: wsSend } = useWebSocket(`/api/ws/session/${id}`, handleWs);
+
+  // Host heartbeat — send every 60s while the host has the page open
+  useEffect(() => {
+    if (!session || session.host_id !== playerId) return;
+    if (session.status === "ended") return;
+
+    // Send immediately on mount
+    wsSend({ type: "host_heartbeat", player_id: playerId });
+
+    const interval = setInterval(() => {
+      wsSend({ type: "host_heartbeat", player_id: playerId });
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [session?.host_id, session?.status, playerId, wsSend]);
 
   const copyCode = () => {
     if (session?.match_code) {
@@ -297,6 +313,24 @@ export default function SessionPage() {
                 <span>{session.platform}</span>
               </div>
             </div>
+
+            {/* Host Inactive Warning */}
+            {session.host_inactive && session.status !== "ended" && (
+              <div
+                className="bg-yellow-500/10 border border-yellow-500/30 p-4 flex items-start gap-3"
+                data-testid="host-inactive-banner"
+              >
+                <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-heading text-sm uppercase tracking-wider text-yellow-500 font-bold">
+                    Host Inactive
+                  </p>
+                  <p className="text-xs text-yellow-500/70 font-mono mt-1">
+                    The host hasn't been active for over 5 minutes. This session may no longer be running.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Match Code */}
             <div
