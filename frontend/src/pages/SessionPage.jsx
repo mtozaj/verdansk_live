@@ -112,14 +112,15 @@ export default function SessionPage() {
       setMessages((prev) => [...prev, data.message]);
   }, []);
 
-  const { send: wsSend } = useWebSocket(`/api/ws/session/${id}`, handleWs);
+  const { send: wsSend, connected: wsConnected } = useWebSocket(`/api/ws/session/${id}`, handleWs);
 
   // Host heartbeat — send every 60s while the host has the page open
   useEffect(() => {
+    if (!wsConnected) return;
     if (!session || session.host_id !== playerId) return;
     if (session.status === "ended") return;
 
-    // Send immediately on mount
+    // Send immediately when WebSocket connects
     wsSend({ type: "host_heartbeat", player_id: playerId });
 
     const interval = setInterval(() => {
@@ -127,7 +128,7 @@ export default function SessionPage() {
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [session?.host_id, session?.status, playerId, wsSend]);
+  }, [wsConnected, session?.host_id, session?.status, playerId, wsSend]);
 
   const copyCode = () => {
     if (session?.match_code) {
