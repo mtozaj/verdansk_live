@@ -74,6 +74,31 @@ const STATE_COLORS = {
   in_lobby: "bg-emerald-500",
 };
 
+function CodeRefreshedAgo({ timestamp }) {
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    const calc = () => {
+      const secs = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
+      if (secs < 60) return "just now";
+      const mins = Math.floor(secs / 60);
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      return `${hrs}h ago`;
+    };
+    setLabel(calc());
+    const interval = setInterval(() => setLabel(calc()), 30000);
+    return () => clearInterval(interval);
+  }, [timestamp]);
+
+  return (
+    <p className="text-xs font-mono text-muted-foreground mt-2" data-testid="code-refreshed-ago">
+      <RefreshCw className="w-3 h-3 inline mr-1" />
+      Code refreshed {label}
+    </p>
+  );
+}
+
 export default function SessionPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -455,27 +480,32 @@ export default function SessionPage() {
                 )}
               </div>
               {codeUnlocked ? (
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex-1 bg-black/40 border px-4 py-3 font-mono text-xl md:text-2xl tracking-widest text-primary font-bold select-all ${
-                      codeChanged ? "border-green-500/50" : "border-primary/30"
-                    }`}
-                    data-testid="match-code-display"
-                  >
-                    {session.match_code}
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex-1 bg-black/40 border px-4 py-3 font-mono text-xl md:text-2xl tracking-widest text-primary font-bold select-all ${
+                        codeChanged ? "border-green-500/50" : "border-primary/30"
+                      }`}
+                      data-testid="match-code-display"
+                    >
+                      {session.match_code}
+                    </div>
+                    <Button
+                      onClick={copyCode}
+                      variant="outline"
+                      className="border-primary/50 text-primary hover:bg-primary hover:text-black h-12 px-4 uppercase tracking-widest font-bold text-xs"
+                      data-testid="copy-code-btn"
+                    >
+                      {copied ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
                   </div>
-                  <Button
-                    onClick={copyCode}
-                    variant="outline"
-                    className="border-primary/50 text-primary hover:bg-primary hover:text-black h-12 px-4 uppercase tracking-widest font-bold text-xs"
-                    data-testid="copy-code-btn"
-                  >
-                    {copied ? (
-                      <Check className="w-4 h-4" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </Button>
+                  {session.lobby_reset_at && session.lobby_reset_at !== session.created_at && (
+                    <CodeRefreshedAgo timestamp={session.lobby_reset_at} />
+                  )}
                 </div>
               ) : (
                 <div
