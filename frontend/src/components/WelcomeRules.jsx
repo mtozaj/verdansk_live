@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   Crosshair,
@@ -24,30 +23,30 @@ export const WelcomeRules = () => {
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-background flex items-center justify-center p-4"
+      className="fixed inset-0 z-[60] bg-background overflow-y-auto welcome-scroll"
       data-testid="welcome-screen"
     >
-      <div className="max-w-xl w-full bg-card border border-white/10 overflow-hidden">
-        <div className="p-6 pb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Crosshair className="w-6 h-6 text-primary" />
-            <h1 className="font-heading text-3xl font-bold uppercase tracking-tight text-foreground">
-              Rally Point
-            </h1>
+      <div className="min-h-full flex items-start sm:items-center justify-center p-4 py-8">
+        <div className="max-w-xl w-full bg-card border border-white/10">
+          <div className="p-6 pb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Crosshair className="w-6 h-6 text-primary" />
+              <h1 className="font-heading text-3xl font-bold uppercase tracking-tight text-foreground">
+                Rally Point
+              </h1>
+            </div>
+            <p className="text-lg text-primary font-heading uppercase tracking-wide">
+              Let's bring Verdansk back.
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              This is a live coordination hub for Warzone Verdansk private
+              matches. Read these quick guidelines to keep sessions running
+              smoothly for everyone.
+            </p>
           </div>
-          <p className="text-lg text-primary font-heading uppercase tracking-wide">
-            Let's bring Verdansk back.
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            This is a live coordination hub for Warzone Verdansk private
-            matches. Read these quick guidelines to keep sessions running
-            smoothly for everyone.
-          </p>
-        </div>
 
-        <Separator className="bg-white/5" />
+          <Separator className="bg-white/5" />
 
-        <ScrollArea className="max-h-[50vh]">
           <div className="p-6 space-y-6">
             {/* Host rules */}
             <div>
@@ -158,19 +157,19 @@ export const WelcomeRules = () => {
               </p>
             </div>
           </div>
-        </ScrollArea>
 
-        <Separator className="bg-white/5" />
+          <Separator className="bg-white/5" />
 
-        <div className="p-6">
-          <Button
-            onClick={handleAccept}
-            className="w-full uppercase tracking-widest font-bold text-sm active:scale-95 h-12 glow-primary"
-            data-testid="welcome-accept-btn"
-          >
-            I Understand — Let Me In
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </Button>
+          <div className="p-6">
+            <Button
+              onClick={handleAccept}
+              className="w-full uppercase tracking-widest font-bold text-sm active:scale-95 h-12 glow-primary"
+              data-testid="welcome-accept-btn"
+            >
+              I Understand — Let Me In
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
