@@ -21,14 +21,30 @@ export function PlayerProvider({ children }) {
     return localStorage.getItem("rp_nickname") || "";
   });
 
+  const [rulesAccepted, setRulesAcceptedState] = useState(() => {
+    return localStorage.getItem("rp_rules_accepted") === "true";
+  });
+
   const setNickname = (name) => {
     setNicknameState(name);
     localStorage.setItem("rp_nickname", name);
   };
 
+  const acceptRules = () => {
+    localStorage.setItem("rp_rules_accepted", "true");
+    setRulesAcceptedState(true);
+  };
+
   return (
     <PlayerContext.Provider
-      value={{ playerId, nickname, setNickname, hasNickname: !!nickname }}
+      value={{
+        playerId,
+        nickname,
+        setNickname,
+        hasNickname: !!nickname,
+        rulesAccepted,
+        acceptRules,
+      }}
     >
       {children}
     </PlayerContext.Provider>

@@ -30,6 +30,10 @@ export const NicknamePrompt = () => {
 
   if (hasNickname) return null;
 
+  // Don't show nickname prompt until welcome rules are accepted
+  const { rulesAccepted } = usePlayer();
+  if (!rulesAccepted) return null;
+
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent

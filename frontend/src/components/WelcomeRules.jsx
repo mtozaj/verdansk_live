@@ -8,26 +8,36 @@ import {
   Globe,
   ChevronRight,
 } from "lucide-react";
+import { usePlayer } from "@/hooks/usePlayer";
 
 export const WelcomeRules = () => {
-  const [dismissed, setDismissed] = useState(() => {
-    return localStorage.getItem("rp_rules_accepted") === "true";
-  });
+  const { rulesAccepted, acceptRules } = usePlayer();
 
-  if (dismissed) return null;
+  if (rulesAccepted) return null;
 
   const handleAccept = () => {
-    localStorage.setItem("rp_rules_accepted", "true");
-    setDismissed(true);
+    acceptRules();
   };
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-background overflow-y-auto welcome-scroll"
       data-testid="welcome-screen"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        background: "hsl(0 0% 3.5%)",
+        overflowY: "scroll",
+        WebkitOverflowScrolling: "touch",
+      }}
+      className="welcome-scroll"
     >
-      <div className="min-h-full flex items-start sm:items-center justify-center p-4 py-8">
-        <div className="max-w-xl w-full bg-card border border-white/10">
+      <div className="max-w-xl w-full mx-auto px-4 py-8">
+        <div className="bg-card border border-white/10">
+          {/* Header */}
           <div className="p-6 pb-4">
             <div className="flex items-center gap-2 mb-3">
               <Crosshair className="w-6 h-6 text-primary" />
@@ -47,6 +57,7 @@ export const WelcomeRules = () => {
 
           <Separator className="bg-white/5" />
 
+          {/* Rules content */}
           <div className="p-6 space-y-6">
             {/* Host rules */}
             <div>
@@ -160,6 +171,7 @@ export const WelcomeRules = () => {
 
           <Separator className="bg-white/5" />
 
+          {/* Button */}
           <div className="p-6">
             <Button
               onClick={handleAccept}
