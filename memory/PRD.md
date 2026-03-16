@@ -9,59 +9,43 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 - **Real-time**: WebSocket for lobby and per-session updates
 - **Auth**: None - anonymous with nicknames (localStorage)
 
-## User Personas
-1. **Host**: Creates private match sessions, shares codes, manages lobby lifecycle
-2. **Player**: Browses active sessions, joins lobbies, coordinates with others
-3. **Browser**: Lands on site to check if any sessions are active
-
 ## Core Requirements (Static)
-- Real-time session board with live player counts
-- Session lifecycle: filling → almost_full → starting → in_progress → ended
-- Player readiness states: interested → ready → joining → in_lobby
-- Match code sharing with one-click copy
-- Session chat for lightweight coordination
-- Host trust signals (launch rate, sessions hosted)
-- Staleness detection (auto-expire inactive sessions)
-- Browser push notifications + in-app toasts
-- Mobile-first responsive design
-- Region/map/status filters
+- Verdansk ONLY - no other maps
+- Min players: 50 (hardcoded), Max: 150
+- Strict one-way status transitions: filling → starting → in_progress → ended
+- Strict one-way player states: interested → joining → in_lobby
+- Match code LOCKED until player commits to joining
+- No "ready" state - simplified 3-state model
 
-## What's Been Implemented (2026-03-16)
-- [x] Full backend API: Sessions CRUD, player management, chat, stats, WebSocket
-- [x] WebSocket real-time: lobby updates, per-session updates, chat
-- [x] Homepage: Hero section, filter bar, session board with live cards
-- [x] Session detail: Match code, progress bar, readiness controls, player list, chat
-- [x] Host controls: Update code, start/end session, status management
-- [x] Nickname system: Anonymous identity with localStorage
-- [x] Notification system: In-app toasts via Sonner, browser push notifications
-- [x] Staleness cleanup: Background task auto-expires inactive sessions
-- [x] Dark tactical UI: Barlow Condensed headings, JetBrains Mono data, orange primary
-- [x] Mobile-responsive design
+## What's Been Implemented
+### Phase 1 (2026-03-16) - MVP
+- [x] Full backend API with MongoDB
+- [x] WebSocket real-time updates
+- [x] Homepage with session board, filters, hero
+- [x] Session detail with chat, player list, code
+
+### Phase 2 (2026-03-16) - Hardening
+- [x] Verdansk-only (removed map selection)
+- [x] 50 min players, 150 max (hardcoded)
+- [x] Strict one-way status transitions (backend enforced)
+- [x] Strict one-way player state transitions (backend enforced)
+- [x] Match code locking (only visible to joining/in_lobby players)
+- [x] Removed "ready" state (interested → joining → in_lobby)
+- [x] Progressive readiness UI (shows only next action)
+- [x] Simplified create session form (title, code, region only)
 
 ## Testing Results
-- Backend: 100% (14/14 endpoints passing)
-- Frontend: 95% (all critical flows working)
+- Backend: 100% (18/18 tests)
+- Frontend: 100%
+- Integration: 100%
 
 ## Prioritized Backlog
-### P0 (Critical)
-- All P0 features implemented
+### P1
+- Session sharing link with rich preview
+- Sound alerts for session milestones
+- "Watch this session" notification hooks
 
-### P1 (Important)
-- Session sharing link (copy URL to clipboard)
-- Sound alerts when session reaches threshold
-- "Notify me" button for specific sessions
-- Session search by title
-
-### P2 (Nice to Have)
+### P2
 - Session history / recent sessions
-- Player profiles with game stats
-- Voice channel integration
-- Multiple match code formats support
-- Session templates for quick hosting
-- Dark/light theme toggle (currently dark-only by design)
-
-## Next Tasks
-1. Add session share URL functionality
-2. Implement sound alerts for session milestones
-3. Add "Watch this session" notification hooks
-4. Consider adding session categories/tags
+- Player profiles
+- Discord bot integration
