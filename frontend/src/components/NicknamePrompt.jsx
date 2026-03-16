@@ -12,7 +12,7 @@ import { Crosshair } from "lucide-react";
 import { usePlayer } from "@/hooks/usePlayer";
 
 export const NicknamePrompt = () => {
-  const { hasNickname, setNickname } = usePlayer();
+  const { hasNickname, setNickname, rulesAccepted } = usePlayer();
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(!hasNickname);
 
@@ -29,9 +29,6 @@ export const NicknamePrompt = () => {
   };
 
   if (hasNickname) return null;
-
-  // Don't show nickname prompt until welcome rules are accepted
-  const { rulesAccepted } = usePlayer();
   if (!rulesAccepted) return null;
 
   return (

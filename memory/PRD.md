@@ -34,6 +34,10 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 - [x] Progressive readiness UI (shows only next action)
 - [x] Simplified create session form (title, code, region only)
 
+### Phase 3 (2026-03-16) - Bug Fix
+- [x] Fixed WelcomeRules scroll & button click (z-index conflict with NicknamePrompt portal)
+- [x] Fixed NicknamePrompt not appearing after rules dismissal (React Hooks violation — usePlayer() called after early return)
+
 ## Testing Results
 - Backend: 100% (18/18 tests)
 - Frontend: 100%
