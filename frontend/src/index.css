@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+#emergent-badge {
+  display: none !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 3.5%;
