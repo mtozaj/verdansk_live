@@ -14,7 +14,10 @@ export const ChatFeed = ({ messages, onSend, currentPlayerId }) => {
   const bottomRef = useRef(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const viewport = bottomRef.current?.closest('[data-radix-scroll-area-viewport]');
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = (e) => {

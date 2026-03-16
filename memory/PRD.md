@@ -37,6 +37,7 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 ### Phase 3 (2026-03-16) - Bug Fix
 - [x] Fixed WelcomeRules scroll & button click (z-index conflict with NicknamePrompt portal)
 - [x] Fixed NicknamePrompt not appearing after rules dismissal (React Hooks violation — usePlayer() called after early return)
+- [x] Fixed auto-scroll bug on SessionPage — ChatFeed's scrollIntoView was scrolling the entire page on mobile/zoomed views
 
 ## Testing Results
 - Backend: 100% (18/18 tests)
