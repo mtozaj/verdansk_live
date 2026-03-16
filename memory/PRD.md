@@ -49,6 +49,16 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 - [x] Updated page title & OG meta tags for proper link previews (Rally Point branding)
 - [x] Generated OG preview image for social sharing
 - [x] Removed Emergent badge via MutationObserver
+
+### Phase 5 (2026-03-16) - Warzone Lobby Timer & Reset
+- [x] 30-minute countdown timer on session page (matches Warzone's lobby expiry)
+- [x] Timer turns yellow in last 5 minutes, red when expired
+- [x] "Lobby Expired" prompt for host with Reset Lobby button + new code input
+- [x] "Lobby Expired — Waiting for host" message for players
+- [x] Reset Lobby endpoint: resets timer, updates code, moves in_lobby players back to joining
+- [x] "NEW CODE" flashing green badge on match code display when code changes
+- [x] Toast notifications for code changes and lobby resets to all connected players
+- [x] Manual code update also resets the 30-min timer
 - Backend: 100% (18/18 tests)
 - Frontend: 100%
 - Integration: 100%

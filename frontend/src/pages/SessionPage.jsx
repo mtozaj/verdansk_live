@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Lock,
   AlertTriangle,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ import { usePlayer } from "@/hooks/usePlayer";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { ChatFeed } from "@/components/ChatFeed";
 import { Header } from "@/components/Header";
+import { LobbyTimer } from "@/components/LobbyTimer";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -81,7 +83,10 @@ export default function SessionPage() {
   const [messages, setMessages] = useState([]);
   const [copied, setCopied] = useState(false);
   const [newCode, setNewCode] = useState("");
+  const [resetCode, setResetCode] = useState("");
   const [loading, setLoading] = useState(true);
+  const [codeChanged, setCodeChanged] = useState(false);
+  const codeChangedTimer = useRef(null);
 
   const isHost = session?.host_id === playerId;
   const myPlayer = session?.players?.find((p) => p.player_id === playerId);
@@ -110,6 +115,13 @@ export default function SessionPage() {
     if (data.type === "session_updated") setSession(data.session);
     if (data.type === "chat_message")
       setMessages((prev) => [...prev, data.message]);
+    if (data.type === "code_changed") {
+      toast.info("Match code has been updated!");
+      setCodeChanged(true);
+    }
+    if (data.type === "lobby_reset") {
+      toast.info("Lobby has been reset — check the new match code");
+    }
   }, []);
 
   const { send: wsSend, connected: wsConnected } = useWebSocket(`/api/ws/session/${id}`, handleWs);
@@ -130,12 +142,38 @@ export default function SessionPage() {
     return () => clearInterval(interval);
   }, [wsConnected, session?.host_id, session?.status, playerId, wsSend]);
 
+  // Auto-dismiss "NEW CODE" badge after 30s or when copied
+  useEffect(() => {
+    if (!codeChanged) return;
+    codeChangedTimer.current = setTimeout(() => setCodeChanged(false), 30000);
+    return () => clearTimeout(codeChangedTimer.current);
+  }, [codeChanged]);
+
   const copyCode = () => {
     if (session?.match_code) {
       navigator.clipboard.writeText(session.match_code);
       setCopied(true);
+      setCodeChanged(false);
       toast.success("Code copied!");
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const resetLobby = async () => {
+    if (!resetCode.trim()) {
+      toast.error("Enter the new match code");
+      return;
+    }
+    try {
+      const res = await axios.post(
+        `${API}/sessions/${id}/reset-lobby?host_id=${playerId}`,
+        { match_code: resetCode.toUpperCase() }
+      );
+      setSession(res.data);
+      setResetCode("");
+      toast.success("Lobby reset with new code!");
+    } catch {
+      toast.error("Failed to reset lobby");
     }
   };
 
@@ -333,18 +371,95 @@ export default function SessionPage() {
               </div>
             )}
 
+            {/* Lobby Timer */}
+            <LobbyTimer lobbyResetAt={session.lobby_reset_at} status={session.status} />
+
+            {/* Lobby Expired Reset Prompt */}
+            {isHost && ["filling", "almost_full"].includes(session.status) && (() => {
+              const start = new Date(session.lobby_reset_at || session.created_at).getTime();
+              const elapsed = (Date.now() - start) / 1000;
+              return elapsed >= 1800;
+            })() && (
+              <div
+                className="bg-red-500/10 border border-red-500/30 p-5"
+                data-testid="lobby-expired-reset"
+              >
+                <div className="flex items-start gap-3 mb-4">
+                  <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-heading text-sm uppercase tracking-wider text-red-400 font-bold">
+                      Lobby Expired
+                    </p>
+                    <p className="text-xs text-red-400/70 font-mono mt-1">
+                      Warzone has kicked all players. Create a new private match and reset the lobby with the new code.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={resetCode}
+                    onChange={(e) => setResetCode(e.target.value)}
+                    placeholder="New match code"
+                    className="bg-secondary/50 border-white/10 font-mono text-sm"
+                    data-testid="reset-code-input"
+                  />
+                  <Button
+                    onClick={resetLobby}
+                    className="uppercase tracking-widest font-bold text-xs bg-red-600 hover:bg-red-700 text-white shrink-0"
+                    data-testid="reset-lobby-btn"
+                  >
+                    <RotateCcw className="w-3 h-3 mr-1.5" /> Reset Lobby
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Lobby Expired — Player View */}
+            {!isHost && ["filling", "almost_full"].includes(session.status) && (() => {
+              const start = new Date(session.lobby_reset_at || session.created_at).getTime();
+              const elapsed = (Date.now() - start) / 1000;
+              return elapsed >= 1800;
+            })() && (
+              <div
+                className="bg-red-500/10 border border-red-500/30 p-4 flex items-start gap-3"
+                data-testid="lobby-expired-player"
+              >
+                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-heading text-sm uppercase tracking-wider text-red-400 font-bold">
+                    Lobby Expired
+                  </p>
+                  <p className="text-xs text-red-400/70 font-mono mt-1">
+                    Warzone has kicked all players. Waiting for the host to reset the lobby with a new code.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Match Code */}
             <div
               className="bg-card border border-white/5 p-5"
               data-testid="match-code-section"
             >
-              <h3 className="font-heading text-sm uppercase tracking-wider text-muted-foreground mb-3">
-                Match Code
-              </h3>
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="font-heading text-sm uppercase tracking-wider text-muted-foreground">
+                  Match Code
+                </h3>
+                {codeChanged && (
+                  <Badge
+                    className="bg-green-500/20 text-green-400 border-green-500/30 font-mono text-[10px] uppercase tracking-wider animate-pulse"
+                    data-testid="new-code-badge"
+                  >
+                    New Code
+                  </Badge>
+                )}
+              </div>
               {codeUnlocked ? (
                 <div className="flex items-center gap-3">
                   <div
-                    className="flex-1 bg-black/40 border border-primary/30 px-4 py-3 font-mono text-xl md:text-2xl tracking-widest text-primary font-bold select-all"
+                    className={`flex-1 bg-black/40 border px-4 py-3 font-mono text-xl md:text-2xl tracking-widest text-primary font-bold select-all ${
+                      codeChanged ? "border-green-500/50" : "border-primary/30"
+                    }`}
                     data-testid="match-code-display"
                   >
                     {session.match_code}

@@ -106,6 +106,7 @@ def clean(doc):
     doc["ready_count"] = sum(1 for p in ps if p.get("state") in ("joining", "in_lobby"))
     doc["in_lobby_count"] = sum(1 for p in ps if p.get("state") == "in_lobby")
     doc["host_inactive"] = doc.get("host_inactive", False)
+    doc["lobby_reset_at"] = doc.get("lobby_reset_at", doc.get("created_at"))
     return doc
 
 
@@ -146,6 +147,7 @@ async def create_session(data: SessionCreate):
         ],
         "created_at": now,
         "updated_at": now,
+        "lobby_reset_at": now,
         "host_last_heartbeat": now,
         "host_inactive": False,
         "host_sessions_count": hosted + 1,
@@ -193,8 +195,11 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
         raise HTTPException(403, "Only host can update")
 
     upd = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    code_changed = False
     if data.match_code is not None:
         upd["match_code"] = data.match_code
+        upd["lobby_reset_at"] = upd["updated_at"]
+        code_changed = True
     if data.status is not None:
         current_status = s.get("status", "filling")
         allowed_statuses = VALID_STATUS_TRANSITIONS.get(current_status, [])
@@ -216,6 +221,8 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
     result = clean(updated)
     await mgr.broadcast(f"session:{sid}", {"type": "session_updated", "session": result})
     await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
+    if code_changed:
+        await mgr.broadcast(f"session:{sid}", {"type": "code_changed", "match_code": data.match_code})
     return result
 
 
@@ -290,6 +297,51 @@ async def leave_session(sid: str, player_id: str = Query(...)):
         raise HTTPException(404, "Session not found")
     result = clean(updated)
     await mgr.broadcast(f"session:{sid}", {"type": "session_updated", "session": result})
+    await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
+    return result
+
+
+
+class ResetLobby(BaseModel):
+    match_code: str
+
+
+@api_router.post("/sessions/{sid}/reset-lobby")
+async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
+    s = await db.sessions.find_one({"id": sid})
+    if not s:
+        raise HTTPException(404, "Session not found")
+    if not host_id or s["host_id"] != host_id:
+        raise HTTPException(403, "Only host can reset lobby")
+    if s["status"] not in ("filling", "almost_full"):
+        raise HTTPException(400, "Can only reset lobby during filling phase")
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Move in_lobby players back to joining
+    updated_players = []
+    for p in s.get("players", []):
+        if p["state"] == "in_lobby":
+            p["state"] = "joining"
+        updated_players.append(p)
+
+    await db.sessions.update_one(
+        {"id": sid},
+        {
+            "$set": {
+                "players": updated_players,
+                "match_code": data.match_code,
+                "lobby_reset_at": now,
+                "updated_at": now,
+            }
+        },
+    )
+
+    updated = await db.sessions.find_one({"id": sid}, {"_id": 0})
+    result = clean(updated)
+    await mgr.broadcast(f"session:{sid}", {"type": "session_updated", "session": result})
+    await mgr.broadcast(f"session:{sid}", {"type": "code_changed", "match_code": data.match_code})
+    await mgr.broadcast(f"session:{sid}", {"type": "lobby_reset"})
     await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
     return result
 
