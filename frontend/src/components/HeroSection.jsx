@@ -24,10 +24,8 @@ export const HeroSection = ({ stats }) => {
             Find Your <span className="text-primary">Verdansk</span> Lobby
           </h1>
 
-          <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-lg mb-8">
-            Stop scrolling Reddit for stale match codes. Join live private
-            matches filling right now. See real player counts. Get in-game
-            faster.
+          <p className="text-base md:text-lg text-primary font-heading uppercase tracking-wide mb-8">
+            Let's bring Verdansk back!
           </p>
 
           <div className="flex flex-wrap gap-6">

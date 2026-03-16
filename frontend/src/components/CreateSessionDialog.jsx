@@ -131,6 +131,9 @@ export const CreateSessionDialog = ({ open, onOpenChange }) => {
                 <SelectItem value="SA">South America</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-[10px] text-muted-foreground/60 font-mono">
+              Pick your region. Players closer to the host get lower ping.
+            </p>
           </div>
 
           <Button
