@@ -1,0 +1,139 @@
+{
+  "typography": {
+    "font_family": {
+      "heading": "Barlow Condensed, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "imports": [
+      "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    ],
+    "scale": {
+      "h1": "text-5xl md:text-6xl font-extrabold tracking-tight uppercase",
+      "h2": "text-3xl md:text-4xl font-bold tracking-tight uppercase",
+      "h3": "text-2xl font-bold tracking-normal uppercase",
+      "p": "text-base leading-relaxed text-muted-foreground",
+      "small": "text-sm font-medium tracking-wide text-muted-foreground",
+      "code": "font-mono text-xs text-accent"
+    }
+  },
+  "colors": {
+    "theme": "dark",
+    "palette": {
+      "background": "0 0% 3.5%", 
+      "foreground": "0 0% 95%",
+      "card": "0 0% 5%",
+      "card_foreground": "0 0% 95%",
+      "popover": "0 0% 5%",
+      "popover_foreground": "0 0% 95%",
+      "primary": "38 92% 50%", 
+      "primary_foreground": "0 0% 5%",
+      "secondary": "240 4% 16%",
+      "secondary_foreground": "0 0% 98%",
+      "muted": "240 4% 16%",
+      "muted_foreground": "240 5% 65%",
+      "accent": "38 92% 50%",
+      "accent_foreground": "0 0% 5%",
+      "destructive": "0 84% 60%",
+      "destructive_foreground": "0 0% 98%",
+      "border": "240 4% 16%",
+      "input": "240 4% 16%",
+      "ring": "38 92% 50%"
+    },
+    "utility": {
+      "success": "142 71% 45%",
+      "warning": "38 92% 50%",
+      "error": "0 84% 60%",
+      "info": "199 89% 48%"
+    }
+  },
+  "visual_enhancers": {
+    "border_radius": {
+      "default": "0px",
+      "sm": "0px",
+      "md": "2px",
+      "lg": "4px",
+      "full": "9999px"
+    },
+    "shadows": {
+      "card": "0 1px 0 0 rgba(255, 255, 255, 0.1) inset, 0 4px 8px -2px rgba(0, 0, 0, 0.5)",
+      "glow": "0 0 15px rgba(245, 158, 11, 0.3)"
+    },
+    "glassmorphism": {
+      "enabled": true,
+      "styles": "backdrop-blur-md bg-black/60 border border-white/10"
+    },
+    "textures": {
+      "scanlines": "repeating-linear-gradient(0deg, transparent, transparent 2px, #000 3px, #000 3px)",
+      "grid": "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)"
+    }
+  },
+  "layout": {
+    "spacing_scale": "generous",
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "grid_strategy": "bento",
+    "mobile_first": true
+  },
+  "components": {
+    "buttons": {
+      "default": "uppercase tracking-widest font-bold text-xs rounded-sm transition-all active:scale-95",
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_10px_rgba(245,158,11,0.4)] hover:shadow-[0_0_20px_rgba(245,158,11,0.6)]",
+      "outline": "border-2 border-primary/50 text-primary hover:bg-primary hover:text-black uppercase tracking-widest"
+    },
+    "cards": {
+      "style": "bg-card border border-white/5 relative overflow-hidden group",
+      "hover": "hover:border-primary/50 transition-colors duration-300"
+    },
+    "inputs": {
+      "style": "bg-secondary/50 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary rounded-sm placeholder:text-muted-foreground/50 font-mono text-sm"
+    }
+  },
+  "motion": {
+    "micro_interactions": {
+      "hover_lift": "hover:-translate-y-0.5 transition-transform duration-200",
+      "active_press": "active:scale-95 transition-transform duration-75"
+    },
+    "loading": {
+      "skeleton": "animate-pulse bg-white/5"
+    }
+  },
+  "image_urls": {
+    "hero_background": "https://images.unsplash.com/photo-1730724655710-5b9bd9c68349?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODF8MHwxfHNlYXJjaHwxfHxkYXJrJTIwZGlnaXRhbCUyMGNpdHklMjBtYXAlMjBncmlkfGVufDB8fHx8MTc3MzYyODU0NXww&ixlib=rb-4.1.0&q=85",
+    "map_thumbnail_verdansk": "https://images.unsplash.com/photo-1620662892011-f5c2d523fae2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODF8MHwxfHNlYXJjaHwzfHxkYXJrJTIwZGlnaXRhbCUyMGNpdHklMjBtYXAlMjBncmlkfGVufDB8fHx8MTc3MzYyODU0NXww&ixlib=rb-4.1.0&q=85",
+    "soldier_avatar": "https://images.unsplash.com/photo-1733747854863-aafe8a414100?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHw0fHxzcGVjaWFsJTIwZm9yY2VzJTIwc29sZGllciUyMGRhcmslMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzM2Mjg1NDV8MA&ixlib=rb-4.1.0&q=85",
+    "texture_overlay": "https://images.unsplash.com/photo-1770351978852-43d97c436b4f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MjJ8MHwxfHNlYXJjaHwzfHxkYXJrJTIwbWV0YWwlMjB0ZXh0dXJlJTIwZ3JpbWV8ZW58MHx8fHwxNzczNjI4NTQ2fDA&ixlib=rb-4.1.0&q=85"
+  },
+  "instructions_to_main_agent": [
+    "Install the required fonts in index.html or CSS import.",
+    "Update tailwind.config.js with the provided colors (extend theme).",
+    "Force DARK MODE by default. Do not implement a light mode toggle for this specific app (it breaks immersion).",
+    "Use 'Barlow Condensed' for all headings (h1-h6) and 'Inter' for body text.",
+    "Use 'JetBrains Mono' for game codes, player counts, and timestamps.",
+    "Implement the 'bento' grid for the dashboard session list.",
+    "Use the provided image URLs for placeholders. Do not leave empty colored boxes.",
+    "For the 'Live Status' indicators, use a pulsing CSS animation on the green/orange dots.",
+    "Ensure all interactive elements have data-testid attributes.",
+    "Use Lucide-React icons (already installed).",
+    "Add a subtle noise texture overlay to the entire body background using `before:fixed before:inset-0 before:bg-[url(...)] before:opacity-[0.03] before:pointer-events-none`."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER: use AI assistant Emoji characters like 🤖 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN",
+    "Prioritize using pre-existing components from src/components/ui when applicable",
+    "Create new components that match the style and conventions of existing components when needed",
+    "Components MUST use named exports (export const ComponentName = ...)",
+    "Pages MUST use default exports (export default function PageName() {...})",
+    "Use 'sonner' for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx"
+  ]
+}
