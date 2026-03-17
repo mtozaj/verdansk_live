@@ -35,7 +35,8 @@ class SessionCreate(BaseModel):
 
 # Strict one-way status transitions (no going back)
 VALID_STATUS_TRANSITIONS = {
-    "filling": ["starting", "ended"],
+    "filling": ["almost_full", "starting", "ended"],
+    "almost_full": ["filling", "starting", "ended"],
     "starting": ["in_progress", "ended"],
     "in_progress": ["ended"],
 }
@@ -108,6 +109,29 @@ def clean(doc):
     doc["host_inactive"] = doc.get("host_inactive", False)
     doc["lobby_reset_at"] = doc.get("lobby_reset_at", doc.get("created_at"))
     return doc
+
+
+async def auto_update_status(sid: str):
+    """Auto-transition between filling <-> almost_full based on ready player count."""
+    s = await db.sessions.find_one({"id": sid})
+    if not s or s["status"] not in ("filling", "almost_full"):
+        return
+    ps = s.get("players", [])
+    ready = sum(1 for p in ps if p.get("state") in ("joining", "in_lobby"))
+    min_players = s.get("min_players", 50)
+    threshold = min_players * 0.8  # 80% of min = 40 players
+
+    new_status = None
+    if s["status"] == "filling" and ready >= threshold:
+        new_status = "almost_full"
+    elif s["status"] == "almost_full" and ready < threshold:
+        new_status = "filling"
+
+    if new_status:
+        await db.sessions.update_one(
+            {"id": sid},
+            {"$set": {"status": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
 
 
 # ===== REST Endpoints =====
@@ -209,7 +233,7 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
                 f"Cannot transition from '{current_status}' to '{data.status}'",
             )
         upd["status"] = data.status
-        if data.status in ("starting", "in_progress"):
+        if data.status == "starting":
             await db.host_stats.update_one(
                 {"host_id": s["host_id"]},
                 {"$inc": {"successful_launches": 1}},
@@ -275,6 +299,7 @@ async def join_session(sid: str, data: PlayerAction):
             },
         )
 
+    await auto_update_status(sid)
     updated = await db.sessions.find_one({"id": sid}, {"_id": 0})
     result = clean(updated)
     await mgr.broadcast(f"session:{sid}", {"type": "session_updated", "session": result})
@@ -292,6 +317,7 @@ async def leave_session(sid: str, player_id: str = Query(...)):
             "$set": {"updated_at": now},
         },
     )
+    await auto_update_status(sid)
     updated = await db.sessions.find_one({"id": sid}, {"_id": 0})
     if not updated:
         raise HTTPException(404, "Session not found")
@@ -337,6 +363,7 @@ async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
         },
     )
 
+    await auto_update_status(sid)
     updated = await db.sessions.find_one({"id": sid}, {"_id": 0})
     result = clean(updated)
     await mgr.broadcast(f"session:{sid}", {"type": "session_updated", "session": result})
