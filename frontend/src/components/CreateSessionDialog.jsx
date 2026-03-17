@@ -131,8 +131,6 @@ export const CreateSessionDialog = ({ open, onOpenChange }) => {
                 <SelectItem value="Africa">Africa</SelectItem>
                 <SelectItem value="Asia">Asia</SelectItem>
                 <SelectItem value="Oceania">Oceania</SelectItem>
-                <SelectItem value="OCE">Oceania</SelectItem>
-                <SelectItem value="SA">South America</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-[10px] text-muted-foreground/60 font-mono">
