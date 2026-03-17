@@ -33,8 +33,11 @@ const ACCENT_COLORS = {
 
 export const SessionCard = ({ session, featured }) => {
   const navigate = useNavigate();
-  const status = STATUS_STYLES[session.status] || STATUS_STYLES.filling;
-  const accentColor = ACCENT_COLORS[session.status] || "bg-primary";
+  const isExpired = session.lobby_expired && ["filling", "almost_full"].includes(session.status);
+  const status = isExpired
+    ? { label: "Expired", cls: "bg-red-500/20 text-red-400 border-red-500/30" }
+    : STATUS_STYLES[session.status] || STATUS_STYLES.filling;
+  const accentColor = isExpired ? "bg-red-500" : ACCENT_COLORS[session.status] || "bg-primary";
   const progress = Math.min(
     (session.ready_count / session.min_players) * 100,
     100
@@ -55,7 +58,7 @@ export const SessionCard = ({ session, featured }) => {
       <div className="p-4 md:p-5">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
-            {session.status !== "ended" && <div className="live-dot" />}
+            {session.status !== "ended" && !isExpired && <div className="live-dot" />}
             <span className="font-heading font-bold text-sm uppercase tracking-wide text-primary/80">
               Verdansk
             </span>
