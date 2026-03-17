@@ -28,8 +28,6 @@ export const FilterBar = ({ filters, onChange }) => {
           <SelectItem value="Africa">Africa</SelectItem>
           <SelectItem value="Asia">Asia</SelectItem>
           <SelectItem value="Oceania">Oceania</SelectItem>
-          <SelectItem value="OCE">Oceania</SelectItem>
-          <SelectItem value="SA">South America</SelectItem>
         </SelectContent>
       </Select>
 
