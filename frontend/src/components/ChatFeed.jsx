@@ -96,7 +96,7 @@ export const ChatFeed = ({ messages, onSend, currentPlayerId, hostId, unreadCoun
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Type a message..."
-          className="bg-secondary/50 border-white/10 font-mono text-[16px] sm:text-xs h-8 placeholder:text-muted-foreground/50"
+          className="bg-secondary/50 border-white/10 font-mono text-xs h-8 placeholder:text-muted-foreground/50"
           maxLength={200}
           data-testid="chat-input"
         />
