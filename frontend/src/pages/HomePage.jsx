@@ -46,6 +46,9 @@ export default function HomePage() {
   useEffect(() => {
     fetchSessions();
     fetchStats();
+    // Refresh online count periodically
+    const statsInterval = setInterval(fetchStats, 15000);
+    return () => clearInterval(statsInterval);
   }, [fetchSessions, fetchStats]);
 
   const handleWsMessage = useCallback(
