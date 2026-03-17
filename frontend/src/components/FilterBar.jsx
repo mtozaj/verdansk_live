@@ -19,7 +19,7 @@ export const FilterBar = ({ filters, onChange }) => {
         >
           <SelectValue placeholder="Region" />
         </SelectTrigger>
-        <SelectContent side="bottom">
+        <SelectContent side="bottom" className="w-[var(--radix-select-trigger-width)]">
           <SelectItem value="all">All Regions</SelectItem>
           <SelectItem value="North America">North America</SelectItem>
           <SelectItem value="South America">South America</SelectItem>
@@ -41,7 +41,7 @@ export const FilterBar = ({ filters, onChange }) => {
         >
           <SelectValue placeholder="Status" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="w-[var(--radix-select-trigger-width)]">
           <SelectItem value="all">All Status</SelectItem>
           <SelectItem value="filling">Filling</SelectItem>
           <SelectItem value="almost_full">Almost Full</SelectItem>
