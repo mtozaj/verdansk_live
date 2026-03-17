@@ -100,6 +100,71 @@ function CodeRefreshedAgo({ timestamp }) {
   );
 }
 
+function JoiningStatus({ onConfirm, onLeave, isHost, copied }) {
+  const [nudge, setNudge] = useState(false);
+
+  // Auto-nudge 30s after code is copied
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setNudge(true), 30000);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  return (
+    <div className="space-y-3" data-testid="joining-status">
+      {/* Steps indicator */}
+      <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest">
+        <span className="text-emerald-500 line-through opacity-60">1. Copy code</span>
+        <span className="text-muted-foreground/40">/</span>
+        <span className="text-emerald-500 line-through opacity-60">2. Join in Warzone</span>
+        <span className="text-muted-foreground/40">/</span>
+        <span className="text-yellow-400 font-bold">3. Confirm below</span>
+      </div>
+
+      {/* Warning text */}
+      <div className="bg-yellow-500/10 border border-yellow-500/25 px-3 py-2.5">
+        <p className="text-xs text-yellow-400 font-mono font-bold">
+          Please confirm once you've joined the private match lobby in Warzone.
+        </p>
+        <p className="text-[10px] text-yellow-400/60 font-mono mt-1">
+          The host needs an accurate player count to know when to start.
+        </p>
+      </div>
+
+      {/* Pulsing confirm button */}
+      <Button
+        onClick={onConfirm}
+        className="uppercase tracking-widest font-bold text-sm active:scale-95 bg-emerald-600 hover:bg-emerald-700 text-white w-full h-12 shadow-lg shadow-emerald-600/20 animate-pulse hover:animate-none"
+        data-testid="state-btn-in_lobby"
+      >
+        <Check className="w-4 h-4 mr-2" />
+        I'm In The Lobby
+      </Button>
+
+      {/* Auto-nudge after 30s of copying */}
+      {nudge && (
+        <div className="bg-primary/10 border border-primary/25 px-3 py-2 animate-in fade-in" data-testid="lobby-nudge">
+          <p className="text-xs text-primary font-mono font-bold">
+            Are you in the lobby yet? Please confirm so the host has an accurate count.
+          </p>
+        </div>
+      )}
+
+      {!isHost && (
+        <Button
+          onClick={onLeave}
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:text-destructive text-xs"
+          data-testid="leave-session-btn"
+        >
+          Leave Session
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export default function SessionPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -632,36 +697,12 @@ export default function SessionPage() {
                     )}
                   </div>
                 ) : myPlayer?.state === "joining" ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-green-400" />
-                      <span className="font-mono text-xs text-green-400 uppercase tracking-wider">
-                        Joining — Code Unlocked
-                      </span>
-                    </div>
-                    <Button
-                      onClick={() => updateState("in_lobby")}
-                      className="uppercase tracking-widest font-bold text-xs active:scale-95 bg-emerald-600 hover:bg-emerald-700 text-white"
-                      data-testid="state-btn-in_lobby"
-                    >
-                      <Check className="w-3 h-3 mr-1.5" />
-                      I'm In The Lobby
-                    </Button>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      Confirm once you've entered the private match lobby.
-                    </p>
-                    {!isHost && (
-                      <Button
-                        onClick={leaveSession}
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive text-xs"
-                        data-testid="leave-session-btn"
-                      >
-                        Leave Session
-                      </Button>
-                    )}
-                  </div>
+                  <JoiningStatus
+                    onConfirm={() => updateState("in_lobby")}
+                    onLeave={leaveSession}
+                    isHost={isHost}
+                    copied={copied}
+                  />
                 ) : (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
