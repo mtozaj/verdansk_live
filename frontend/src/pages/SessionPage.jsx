@@ -554,7 +554,7 @@ export default function SessionPage() {
                     data-testid="reset-code-input"
                   />
                   <Button
-                    onClick={resetLobby}
+                    onClick={() => resetLobby()}
                     className="uppercase tracking-widest font-bold text-xs bg-red-600 hover:bg-red-700 text-white shrink-0"
                     data-testid="reset-lobby-btn"
                   >
