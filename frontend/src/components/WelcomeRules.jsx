@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -12,6 +12,15 @@ import { usePlayer } from "@/hooks/usePlayer";
 
 export const WelcomeRules = () => {
   const { rulesAccepted, acceptRules } = usePlayer();
+
+  // Lock body scroll on iOS while welcome screen is showing
+  useEffect(() => {
+    if (rulesAccepted) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [rulesAccepted]);
 
   if (rulesAccepted) return null;
 

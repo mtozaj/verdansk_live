@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,24 @@ export const NicknamePrompt = () => {
   const { hasNickname, setNickname, rulesAccepted } = usePlayer();
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(!hasNickname);
+
+  // Lock body scroll on iOS while dialog is open
+  const isVisible = open && !hasNickname && rulesAccepted;
+  useEffect(() => {
+    if (!isVisible) return;
+    const scrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+      window.scrollTo(0, 0);
+    };
+  }, [isVisible]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
