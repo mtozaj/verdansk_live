@@ -820,6 +820,7 @@ export default function SessionPage() {
                 messages={messages}
                 onSend={sendChat}
                 currentPlayerId={playerId}
+                hostId={session?.host_id}
                 unreadCount={unreadCount}
               />
             </div>

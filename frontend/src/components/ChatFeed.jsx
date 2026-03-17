@@ -9,7 +9,7 @@ function timeStr(dateStr) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export const ChatFeed = ({ messages, onSend, currentPlayerId, unreadCount = 0 }) => {
+export const ChatFeed = ({ messages, onSend, currentPlayerId, hostId, unreadCount = 0 }) => {
   const [text, setText] = useState("");
   const bottomRef = useRef(null);
 
@@ -51,31 +51,40 @@ export const ChatFeed = ({ messages, onSend, currentPlayerId, unreadCount = 0 })
               No messages yet
             </p>
           )}
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`text-xs font-mono py-1.5 px-2 ${
-                msg.player_id === currentPlayerId
-                  ? "bg-primary/10 border-l-2 border-primary"
-                  : "bg-white/[0.02]"
-              }`}
-              data-testid={`chat-msg-${msg.id}`}
-            >
-              <span
-                className={`font-bold ${
-                  msg.player_id === currentPlayerId
-                    ? "text-primary"
-                    : "text-foreground"
+          {messages.map((msg) => {
+            const isMe = msg.player_id === currentPlayerId;
+            const isHost = msg.player_id === hostId;
+            return (
+              <div
+                key={msg.id}
+                className={`text-xs font-mono py-1.5 px-2 ${
+                  isHost
+                    ? "bg-primary/10 border-l-2 border-primary"
+                    : isMe
+                    ? "bg-white/[0.05] border-l-2 border-white/20"
+                    : "bg-white/[0.02]"
                 }`}
+                data-testid={`chat-msg-${msg.id}`}
               >
-                {msg.nickname}
-              </span>
-              <span className="text-muted-foreground/60 ml-2">
-                {timeStr(msg.timestamp)}
-              </span>
-              <p className="text-foreground/80 mt-0.5">{msg.message}</p>
-            </div>
-          ))}
+                <span
+                  className={`font-bold ${
+                    isHost ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  {msg.nickname}
+                </span>
+                {isHost && (
+                  <span className="ml-1.5 text-[9px] font-bold uppercase tracking-widest bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                    Host
+                  </span>
+                )}
+                <span className="text-muted-foreground/60 ml-2">
+                  {timeStr(msg.timestamp)}
+                </span>
+                <p className="text-foreground/80 mt-0.5">{msg.message}</p>
+              </div>
+            );
+          })}
           <div ref={bottomRef} />
         </div>
       </ScrollArea>
