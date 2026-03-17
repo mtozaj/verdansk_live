@@ -41,7 +41,7 @@ export const NicknamePrompt = () => {
           <div className="flex items-center gap-2 mb-2">
             <Crosshair className="w-5 h-5 text-primary" />
             <DialogTitle className="font-heading text-xl uppercase tracking-wider">
-              Set Your Callsign
+              Set Your Username
             </DialogTitle>
           </div>
           <DialogDescription className="text-muted-foreground text-sm">
@@ -52,7 +52,7 @@ export const NicknamePrompt = () => {
           <Input
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="Enter callsign..."
+            placeholder="Enter username..."
             className="bg-secondary/50 border-white/10 font-mono text-sm placeholder:text-muted-foreground/50"
             maxLength={20}
             autoFocus

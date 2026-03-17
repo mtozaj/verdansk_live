@@ -36,7 +36,7 @@ export const CreateSessionDialog = ({ open, onOpenChange }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!hasNickname) {
-      toast.error("Set your callsign first");
+      toast.error("Set your username first");
       return;
     }
     if (!form.title.trim() || !form.match_code.trim()) {
