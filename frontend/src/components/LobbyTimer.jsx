@@ -19,7 +19,7 @@ export const LobbyTimer = ({
     }
 
     if (lobbyExpired) {
-      setRemaining(0);
+      setRemaining(null);
       return;
     }
 
