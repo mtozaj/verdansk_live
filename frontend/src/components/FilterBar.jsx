@@ -19,7 +19,7 @@ export const FilterBar = ({ filters, onChange }) => {
         >
           <SelectValue placeholder="Region" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent side="bottom">
           <SelectItem value="all">All Regions</SelectItem>
           <SelectItem value="North America">North America</SelectItem>
           <SelectItem value="South America">South America</SelectItem>
