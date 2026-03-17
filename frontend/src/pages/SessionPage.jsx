@@ -414,7 +414,7 @@ export default function SessionPage() {
                   </p>
                   <p className="text-xs text-yellow-500/70 font-mono mt-1">
                     Last active: {session.host_last_heartbeat
-                      ? new Date(session.host_last_heartbeat).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      ? timeAgo(session.host_last_heartbeat)
                       : "unknown"}. This session may no longer be running.
                   </p>
                 </div>
