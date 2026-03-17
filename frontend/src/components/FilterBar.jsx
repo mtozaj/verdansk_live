@@ -45,8 +45,8 @@ export const FilterBar = ({ filters, onChange }) => {
           <SelectItem value="all">All Status</SelectItem>
           <SelectItem value="filling">Filling</SelectItem>
           <SelectItem value="almost_full">Almost Full</SelectItem>
-          <SelectItem value="starting">Starting</SelectItem>
-          <SelectItem value="in_progress">In Progress</SelectItem>
+          <SelectItem value="starting">Match Starting Soon</SelectItem>
+          <SelectItem value="in_progress">Match Started</SelectItem>
         </SelectContent>
       </Select>
     </div>

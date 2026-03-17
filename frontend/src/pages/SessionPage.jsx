@@ -53,12 +53,12 @@ const STATUS_MAP = {
     bg: "bg-green-500/20",
   },
   starting: {
-    label: "Starting",
+    label: "Match Starting Soon",
     color: "text-green-300",
     bg: "bg-green-500/20",
   },
   in_progress: {
-    label: "In Progress",
+    label: "Match Started",
     color: "text-blue-400",
     bg: "bg-blue-500/20",
   },
@@ -349,8 +349,8 @@ export default function SessionPage() {
       );
       setSession(res.data);
       const labels = {
-        starting: "starting",
-        in_progress: "in progress",
+        starting: "match starting soon",
+        in_progress: "match started",
         ended: "ended",
       };
       toast.success(`Session ${labels[status] || status}!`);
@@ -490,10 +490,10 @@ export default function SessionPage() {
                 <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-heading text-sm uppercase tracking-wider text-red-400 font-bold">
-                    Match In Progress
+                    Match Started
                   </p>
                   <p className="text-xs text-red-400/70 font-mono mt-1">
-                    This match is in progress. The game has already started and you may not be able to join with the current code.
+                    The match has started. The game is already in progress and you may not be able to join with the current code.
                   </p>
                 </div>
               </div>
@@ -846,7 +846,7 @@ export default function SessionPage() {
                         className="uppercase tracking-widest font-bold text-[10px] bg-green-600 hover:bg-green-700 text-white"
                         data-testid="start-session-btn"
                       >
-                        <Play className="w-3 h-3 mr-1" /> Start Match
+                        <Play className="w-3 h-3 mr-1" /> Lobby Is Ready
                       </Button>
                     )}
                     {session.status === "starting" && (
@@ -856,7 +856,7 @@ export default function SessionPage() {
                         className="uppercase tracking-widest font-bold text-[10px] bg-blue-600 hover:bg-blue-700 text-white"
                         data-testid="in-progress-btn"
                       >
-                        <Play className="w-3 h-3 mr-1" /> In Progress
+                        <Play className="w-3 h-3 mr-1" /> Start Match
                       </Button>
                     )}
                     {(session.status === "starting" || session.status === "in_progress") && (

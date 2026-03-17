@@ -18,8 +18,8 @@ function timeAgo(dateStr) {
 const STATUS_STYLES = {
   filling: { label: "Filling", cls: "bg-primary/20 text-primary border-primary/30" },
   almost_full: { label: "Almost Full", cls: "bg-green-500/20 text-green-400 border-green-500/30" },
-  starting: { label: "Starting", cls: "bg-green-500/20 text-green-300 border-green-500/30" },
-  in_progress: { label: "In Progress", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  starting: { label: "Match Starting Soon", cls: "bg-green-500/20 text-green-300 border-green-500/30" },
+  in_progress: { label: "Match Started", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
   ended: { label: "Ended", cls: "bg-muted text-muted-foreground border-muted" },
 };
 
