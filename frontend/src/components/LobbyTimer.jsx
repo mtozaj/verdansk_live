@@ -28,9 +28,12 @@ export const LobbyTimer = ({
       return;
     }
 
+    // Capture offset ONCE per effect run — not inside calc().
+    // If recomputed every tick, Date.now() cancels itself out
+    // and the countdown freezes at a constant value.
+    const offset = new Date(serverNow).getTime() - Date.now();
     const calc = () => {
-      const clockOffset = new Date(serverNow).getTime() - Date.now();
-      const nowMs = Date.now() + clockOffset;
+      const nowMs = Date.now() + offset;
       const expiresAtMs = new Date(lobbyExpiresAt).getTime();
       return Math.max(Math.floor((expiresAtMs - nowMs) / 1000), 0);
     };
