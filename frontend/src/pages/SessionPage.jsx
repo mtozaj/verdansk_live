@@ -236,7 +236,7 @@ export default function SessionPage() {
       toast.info("Lobby has been reset — check the new match code");
     }
     if (data.type === "lobby_expired") {
-      toast.warning("Warzone lobby expired — all players reset to interested. Waiting for host to set a new code.");
+      toast.warning("Lobby expired - please check for a new code to join again");
     }
   }, []);
 
