@@ -541,7 +541,7 @@ export default function SessionPage() {
                       Lobby Expired
                     </p>
                     <p className="text-xs text-red-400/70 font-mono mt-1">
-                      Warzone has kicked all players. Create a new private match and reset the lobby with the new code.
+                      Warzone has kicked all players. Reset the current lobby with the new code.
                     </p>
                   </div>
                 </div>
