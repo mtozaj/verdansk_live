@@ -237,6 +237,17 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
         upd["match_code"] = data.match_code
         upd["lobby_reset_at"] = upd["updated_at"]
         code_changed = True
+        # Auto-reset if code changes during starting/in_progress
+        current_status = s.get("status", "filling")
+        if current_status in ("starting", "in_progress"):
+            upd["status"] = "filling"
+            # Move in_lobby players back to joining
+            updated_players = []
+            for p in s.get("players", []):
+                if p["state"] == "in_lobby":
+                    p["state"] = "joining"
+                updated_players.append(p)
+            upd["players"] = updated_players
     if data.status is not None:
         current_status = s.get("status", "filling")
         allowed_statuses = VALID_STATUS_TRANSITIONS.get(current_status, [])
@@ -352,8 +363,8 @@ async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
         raise HTTPException(404, "Session not found")
     if not host_id or s["host_id"] != host_id:
         raise HTTPException(403, "Only host can reset lobby")
-    if s["status"] not in ("filling", "almost_full"):
-        raise HTTPException(400, "Can only reset lobby during filling phase")
+    if s["status"] not in ("filling", "almost_full", "starting", "in_progress"):
+        raise HTTPException(400, "Cannot reset an ended session")
 
     now = datetime.now(timezone.utc).isoformat()
 
@@ -372,6 +383,7 @@ async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
                 "match_code": data.match_code,
                 "lobby_reset_at": now,
                 "updated_at": now,
+                "status": "filling",
             }
         },
     )

@@ -272,18 +272,20 @@ export default function SessionPage() {
     }
   };
 
-  const resetLobby = async () => {
-    if (!resetCode.trim()) {
+  const resetLobby = async (codeOverride) => {
+    const code = (codeOverride || resetCode).trim();
+    if (!code) {
       toast.error("Enter the new match code");
       return;
     }
     try {
       const res = await axios.post(
         `${API}/sessions/${id}/reset-lobby?host_id=${playerId}`,
-        { match_code: resetCode.toUpperCase() }
+        { match_code: code.toUpperCase() }
       );
       setSession(res.data);
       setResetCode("");
+      setNewCode("");
       toast.success("Lobby reset with new code!");
     } catch {
       toast.error("Failed to reset lobby");
@@ -799,7 +801,7 @@ export default function SessionPage() {
                   </div>
                   <Separator className="bg-white/5" />
                   <div className="flex flex-wrap gap-2">
-                    {session.status === "filling" && (
+                    {(session.status === "filling" || session.status === "almost_full") && (
                       <Button
                         onClick={() => updateSessionStatus("starting")}
                         size="sm"
@@ -817,6 +819,23 @@ export default function SessionPage() {
                         data-testid="in-progress-btn"
                       >
                         <Play className="w-3 h-3 mr-1" /> In Progress
+                      </Button>
+                    )}
+                    {(session.status === "starting" || session.status === "in_progress") && (
+                      <Button
+                        onClick={() => {
+                          const code = newCode.trim();
+                          if (!code) {
+                            toast.error("Enter a new match code above first");
+                            return;
+                          }
+                          resetLobby(code);
+                        }}
+                        size="sm"
+                        className="uppercase tracking-widest font-bold text-[10px] bg-yellow-600 hover:bg-yellow-700 text-white"
+                        data-testid="reset-lobby-host-btn"
+                      >
+                        <RotateCcw className="w-3 h-3 mr-1" /> Reset Lobby
                       </Button>
                     )}
                     <Button
