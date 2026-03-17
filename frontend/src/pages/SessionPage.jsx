@@ -178,6 +178,7 @@ export default function SessionPage() {
   const [loading, setLoading] = useState(true);
   const [codeChanged, setCodeChanged] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatVisible, setChatVisible] = useState(false);
   const codeChangedTimer = useRef(null);
   const expiryToastShownRef = useRef(false);
   const chatSectionRef = useRef(null);
@@ -213,6 +214,7 @@ export default function SessionPage() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         chatVisibleRef.current = entry.isIntersecting;
+        setChatVisible(entry.isIntersecting);
         if (entry.isIntersecting) setUnreadCount(0);
       },
       { threshold: 0.3 }
@@ -964,7 +966,9 @@ export default function SessionPage() {
 
         {/* Floating chat bubble — mobile only */}
         <button
-          className="lg:hidden fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-primary text-black flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+          className={`lg:hidden fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-primary text-black flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-all duration-300 ${
+            chatVisible ? "opacity-0 pointer-events-none scale-90" : "opacity-100 scale-100"
+          }`}
           onClick={() => {
             chatSectionRef.current?.scrollIntoView({ behavior: "smooth" });
             setUnreadCount(0);
