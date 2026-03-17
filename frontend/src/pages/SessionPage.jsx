@@ -235,6 +235,9 @@ export default function SessionPage() {
     if (data.type === "lobby_reset") {
       toast.info("Lobby has been reset — check the new match code");
     }
+    if (data.type === "lobby_expired") {
+      toast.warning("Warzone lobby expired — all players reset to interested. Waiting for host to set a new code.");
+    }
   }, []);
 
   const { send: wsSend, connected: wsConnected } = useWebSocket(`/api/ws/session/${id}`, handleWs);

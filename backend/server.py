@@ -572,6 +572,38 @@ async def staleness_cleanup():
                 await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
                 logger.info(f"Flagged session {s['id']} as host_inactive")
 
+            # Warzone lobby expiry — reset non-host players to interested after 30 min
+            lobby_cutoff = (now - timedelta(minutes=30)).isoformat()
+            expired_lobbies = await db.sessions.find(
+                {
+                    "status": {"$in": ["filling", "almost_full"]},
+                    "lobby_reset_at": {"$lt": lobby_cutoff},
+                },
+                {"_id": 0},
+            ).to_list(100)
+
+            for s in expired_lobbies:
+                needs_reset = False
+                updated_players = []
+                for p in s.get("players", []):
+                    if p["player_id"] != s["host_id"] and p["state"] in ("joining", "in_lobby"):
+                        p["state"] = "interested"
+                        needs_reset = True
+                    updated_players.append(p)
+
+                if needs_reset:
+                    await db.sessions.update_one(
+                        {"id": s["id"]},
+                        {"$set": {"players": updated_players, "updated_at": now.isoformat()}},
+                    )
+                    await auto_update_status(s["id"])
+                    updated = await db.sessions.find_one({"id": s["id"]}, {"_id": 0})
+                    result = clean(updated)
+                    await mgr.broadcast(f"session:{s['id']}", {"type": "session_updated", "session": result})
+                    await mgr.broadcast(f"session:{s['id']}", {"type": "lobby_expired"})
+                    await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
+                    logger.info(f"Warzone lobby expired for session {s['id']} — reset players to interested")
+
         except Exception as e:
             logger.error(f"Staleness cleanup: {e}")
         await asyncio.sleep(60)
