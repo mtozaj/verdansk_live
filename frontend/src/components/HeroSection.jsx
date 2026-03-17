@@ -1,4 +1,4 @@
-import { Radio, Target, Eye } from "lucide-react";
+import { Radio, Eye } from "lucide-react";
 
 export const HeroSection = ({ stats }) => {
   return (
@@ -40,20 +40,6 @@ export const HeroSection = ({ stats }) => {
                 </span>
                 <span className="text-muted-foreground ml-1">
                   active sessions
-                </span>
-              </span>
-            </div>
-            <div
-              className="flex items-center gap-2"
-              data-testid="hero-stat-players"
-            >
-              <Target className="w-4 h-4 text-primary" />
-              <span className="font-mono text-sm">
-                <span className="text-foreground font-bold">
-                  {stats?.total_players || 0}
-                </span>
-                <span className="text-muted-foreground ml-1">
-                  players joined
                 </span>
               </span>
             </div>

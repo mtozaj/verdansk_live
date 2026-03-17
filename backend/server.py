@@ -71,16 +71,21 @@ class ChatMsg(BaseModel):
 class WSManager:
     def __init__(self):
         self.rooms: Dict[str, List[WebSocket]] = {}
+        self.online_users: Dict[WebSocket, str] = {}  # ws -> player_id
 
     async def connect(self, room: str, ws: WebSocket):
         await ws.accept()
         self.rooms.setdefault(room, []).append(ws)
+
+    def identify(self, ws: WebSocket, player_id: str):
+        self.online_users[ws] = player_id
 
     def disconnect(self, room: str, ws: WebSocket):
         if room in self.rooms:
             self.rooms[room] = [c for c in self.rooms[room] if c != ws]
             if not self.rooms[room]:
                 del self.rooms[room]
+        self.online_users.pop(ws, None)
 
     async def broadcast(self, room: str, data: dict):
         dead = []
@@ -92,9 +97,10 @@ class WSManager:
         for ws in dead:
             if room in self.rooms and ws in self.rooms[room]:
                 self.rooms[room].remove(ws)
+            self.online_users.pop(ws, None)
 
-    def count(self, room: str) -> int:
-        return len(self.rooms.get(room, []))
+    def unique_online_count(self) -> int:
+        return len(set(self.online_users.values()))
 
 
 mgr = WSManager()
@@ -418,7 +424,7 @@ async def get_stats():
     return {
         "active_sessions": active,
         "total_players": r[0]["total"] if r else 0,
-        "online_viewers": mgr.count("lobby"),
+        "online_viewers": mgr.unique_online_count(),
     }
 
 
@@ -432,6 +438,14 @@ async def ws_lobby(ws: WebSocket):
             data = await ws.receive_text()
             if data == "ping":
                 await ws.send_json({"type": "pong"})
+            else:
+                try:
+                    import json
+                    msg = json.loads(data)
+                    if msg.get("type") == "identify" and msg.get("player_id"):
+                        mgr.identify(ws, msg["player_id"])
+                except Exception:
+                    pass
     except (WebSocketDisconnect, Exception):
         mgr.disconnect("lobby", ws)
 
@@ -463,6 +477,8 @@ async def ws_session(ws: WebSocket, sid: str):
                                 result = clean(updated)
                                 await mgr.broadcast(room, {"type": "session_updated", "session": result})
                                 await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
+                    elif msg.get("type") == "identify" and msg.get("player_id"):
+                        mgr.identify(ws, msg["player_id"])
                 except Exception:
                     pass
     except (WebSocketDisconnect, Exception):
