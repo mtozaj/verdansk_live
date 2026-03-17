@@ -111,6 +111,82 @@ class WSManager:
 
 mgr = WSManager()
 
+LOBBY_EXPIRY_WINDOW = timedelta(minutes=30)
+
+
+def parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value
+    return datetime.fromisoformat(value)
+
+
+def get_lobby_reset_datetime(session: dict) -> Optional[datetime]:
+    return parse_iso_datetime(session.get("lobby_reset_at") or session.get("created_at"))
+
+
+def get_lobby_expiry_datetime(session: dict) -> Optional[datetime]:
+    lobby_reset_at = get_lobby_reset_datetime(session)
+    if not lobby_reset_at:
+        return None
+    return lobby_reset_at + LOBBY_EXPIRY_WINDOW
+
+
+def is_lobby_expired(session: Optional[dict], now: Optional[datetime] = None) -> bool:
+    if not session or session.get("status") not in ("filling", "almost_full"):
+        return False
+    expires_at = get_lobby_expiry_datetime(session)
+    if not expires_at:
+        return False
+    if now is None:
+        now = datetime.now(timezone.utc)
+    return now >= expires_at
+
+
+async def reconcile_lobby_expiry(session: Optional[dict], broadcast: bool = False) -> Optional[dict]:
+    if not session:
+        return None
+
+    now = datetime.now(timezone.utc)
+    if not is_lobby_expired(session, now):
+        return session
+
+    updated_players = []
+    players_changed = False
+    for player in session.get("players", []):
+        updated_player = dict(player)
+        if (
+            updated_player.get("player_id") != session.get("host_id")
+            and updated_player.get("state") in ("joining", "in_lobby")
+        ):
+            updated_player["state"] = "interested"
+            players_changed = True
+        updated_players.append(updated_player)
+
+    newly_expired = not session.get("lobby_expired_at")
+    updates = {}
+    if newly_expired:
+        updates["lobby_expired_at"] = now.isoformat()
+    if players_changed:
+        updates["players"] = updated_players
+    if updates:
+        updates["updated_at"] = now.isoformat()
+        await db.sessions.update_one({"id": session["id"]}, {"$set": updates})
+        if players_changed:
+            await auto_update_status(session["id"])
+        session = await db.sessions.find_one({"id": session["id"]})
+
+        if broadcast:
+            result = clean(dict(session))
+            await mgr.broadcast(f"session:{session['id']}", {"type": "session_updated", "session": result})
+            await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
+            if newly_expired:
+                await mgr.broadcast(f"session:{session['id']}", {"type": "lobby_expired"})
+                logger.info(f"Warzone lobby expired for session {session['id']} - reset players to interested")
+
+    return session
+
 
 def clean(doc):
     doc.pop("_id", None)
@@ -121,6 +197,12 @@ def clean(doc):
     doc["host_inactive"] = doc.get("host_inactive", False)
     doc["host_last_heartbeat"] = doc.get("host_last_heartbeat")
     doc["lobby_reset_at"] = doc.get("lobby_reset_at", doc.get("created_at"))
+    doc["lobby_expires_at"] = (
+        get_lobby_expiry_datetime(doc).isoformat() if get_lobby_expiry_datetime(doc) else None
+    )
+    doc["lobby_expired_at"] = doc.get("lobby_expired_at")
+    doc["lobby_expired"] = bool(doc.get("lobby_expired_at"))
+    doc["server_now"] = datetime.now(timezone.utc).isoformat()
     return doc
 
 
@@ -185,6 +267,7 @@ async def create_session(data: SessionCreate):
         "created_at": now,
         "updated_at": now,
         "lobby_reset_at": now,
+        "lobby_expired_at": None,
         "host_last_heartbeat": now,
         "host_inactive": False,
         "host_sessions_count": hosted + 1,
@@ -212,7 +295,11 @@ async def list_sessions(
         q["status"] = status
 
     sessions = await db.sessions.find(q, {"_id": 0}).sort("updated_at", -1).to_list(100)
-    return [clean(s) for s in sessions]
+    results = []
+    for session in sessions:
+        reconciled = await reconcile_lobby_expiry(session, broadcast=True)
+        results.append(clean(dict(reconciled)))
+    return results
 
 
 @api_router.get("/sessions/{sid}")
@@ -220,7 +307,8 @@ async def get_session(sid: str):
     s = await db.sessions.find_one({"id": sid}, {"_id": 0})
     if not s:
         raise HTTPException(404, "Session not found")
-    return clean(s)
+    s = await reconcile_lobby_expiry(s, broadcast=True)
+    return clean(dict(s))
 
 
 @api_router.patch("/sessions/{sid}")
@@ -228,6 +316,7 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
     s = await db.sessions.find_one({"id": sid})
     if not s:
         raise HTTPException(404, "Session not found")
+    s = await reconcile_lobby_expiry(s, broadcast=True)
     if host_id and s["host_id"] != host_id:
         raise HTTPException(403, "Only host can update")
 
@@ -236,6 +325,7 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
     if data.match_code is not None:
         upd["match_code"] = data.match_code
         upd["lobby_reset_at"] = upd["updated_at"]
+        upd["lobby_expired_at"] = None
         code_changed = True
         current_status = s.get("status", "filling")
         # Reset status if in starting/in_progress
@@ -279,6 +369,7 @@ async def join_session(sid: str, data: PlayerAction):
     s = await db.sessions.find_one({"id": sid})
     if not s:
         raise HTTPException(404, "Session not found")
+    s = await reconcile_lobby_expiry(s, broadcast=True)
     if s["status"] == "ended":
         raise HTTPException(400, "Session ended")
 
@@ -333,6 +424,10 @@ async def join_session(sid: str, data: PlayerAction):
 
 @api_router.post("/sessions/{sid}/leave")
 async def leave_session(sid: str, player_id: str = Query(...)):
+    existing = await db.sessions.find_one({"id": sid})
+    if not existing:
+        raise HTTPException(404, "Session not found")
+    await reconcile_lobby_expiry(existing, broadcast=True)
     now = datetime.now(timezone.utc).isoformat()
     await db.sessions.update_one(
         {"id": sid},
@@ -361,6 +456,7 @@ async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
     s = await db.sessions.find_one({"id": sid})
     if not s:
         raise HTTPException(404, "Session not found")
+    s = await reconcile_lobby_expiry(s, broadcast=True)
     if not host_id or s["host_id"] != host_id:
         raise HTTPException(403, "Only host can reset lobby")
     if s["status"] not in ("filling", "almost_full", "starting", "in_progress"):
@@ -382,6 +478,7 @@ async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
                 "players": updated_players,
                 "match_code": data.match_code,
                 "lobby_reset_at": now,
+                "lobby_expired_at": None,
                 "updated_at": now,
                 "status": "filling",
             }
@@ -527,6 +624,22 @@ async def staleness_cleanup():
         try:
             now = datetime.now(timezone.utc)
             cutoff = (now - timedelta(minutes=30)).isoformat()
+
+            expired_lobbies = await db.sessions.find(
+                {
+                    "status": {"$in": ["filling", "almost_full"]},
+                    "lobby_reset_at": {"$lt": cutoff},
+                    "$or": [
+                        {"lobby_expired_at": {"$exists": False}},
+                        {"lobby_expired_at": None},
+                    ],
+                },
+                {"_id": 0},
+            ).to_list(100)
+
+            for session in expired_lobbies:
+                await reconcile_lobby_expiry(session, broadcast=True)
+
             # Auto-end filling/almost_full sessions after 30 min inactivity
             await db.sessions.update_many(
                 {
@@ -571,38 +684,6 @@ async def staleness_cleanup():
                 await mgr.broadcast(f"session:{s['id']}", {"type": "session_updated", "session": result})
                 await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
                 logger.info(f"Flagged session {s['id']} as host_inactive")
-
-            # Warzone lobby expiry — reset non-host players to interested after 30 min
-            lobby_cutoff = (now - timedelta(minutes=30)).isoformat()
-            expired_lobbies = await db.sessions.find(
-                {
-                    "status": {"$in": ["filling", "almost_full"]},
-                    "lobby_reset_at": {"$lt": lobby_cutoff},
-                },
-                {"_id": 0},
-            ).to_list(100)
-
-            for s in expired_lobbies:
-                needs_reset = False
-                updated_players = []
-                for p in s.get("players", []):
-                    if p["player_id"] != s["host_id"] and p["state"] in ("joining", "in_lobby"):
-                        p["state"] = "interested"
-                        needs_reset = True
-                    updated_players.append(p)
-
-                if needs_reset:
-                    await db.sessions.update_one(
-                        {"id": s["id"]},
-                        {"$set": {"players": updated_players, "updated_at": now.isoformat()}},
-                    )
-                    await auto_update_status(s["id"])
-                    updated = await db.sessions.find_one({"id": s["id"]}, {"_id": 0})
-                    result = clean(updated)
-                    await mgr.broadcast(f"session:{s['id']}", {"type": "session_updated", "session": result})
-                    await mgr.broadcast(f"session:{s['id']}", {"type": "lobby_expired"})
-                    await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
-                    logger.info(f"Warzone lobby expired for session {s['id']} — reset players to interested")
 
         except Exception as e:
             logger.error(f"Staleness cleanup: {e}")

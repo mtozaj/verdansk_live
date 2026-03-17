@@ -179,6 +179,7 @@ export default function SessionPage() {
   const [codeChanged, setCodeChanged] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const codeChangedTimer = useRef(null);
+  const expiryToastShownRef = useRef(false);
   const chatSectionRef = useRef(null);
 
   const isHost = session?.host_id === playerId;
@@ -221,7 +222,12 @@ export default function SessionPage() {
   }, [loading]);
 
   const handleWs = useCallback((data) => {
-    if (data.type === "session_updated") setSession(data.session);
+    if (data.type === "session_updated") {
+      setSession(data.session);
+      if (!data.session?.lobby_expired) {
+        expiryToastShownRef.current = false;
+      }
+    }
     if (data.type === "chat_message") {
       setMessages((prev) => [...prev, data.message]);
       if (!chatVisibleRef.current) {
@@ -235,8 +241,9 @@ export default function SessionPage() {
     if (data.type === "lobby_reset") {
       toast.info("Lobby has been reset — check the new match code");
     }
-    if (data.type === "lobby_expired") {
-      toast.warning("Lobby expired - please check for a new code to join again");
+    if (data.type === "lobby_expired" && !expiryToastShownRef.current) {
+      expiryToastShownRef.current = true;
+      toast.warning("Warzone lobby expired - all players reset to interested");
     }
   }, []);
 
@@ -511,14 +518,16 @@ export default function SessionPage() {
             )}
 
             {/* Lobby Timer */}
-            <LobbyTimer lobbyResetAt={session.lobby_reset_at} status={session.status} />
+            <LobbyTimer
+              lobbyResetAt={session.lobby_reset_at}
+              lobbyExpiresAt={session.lobby_expires_at}
+              lobbyExpired={session.lobby_expired}
+              serverNow={session.server_now}
+              status={session.status}
+            />
 
             {/* Lobby Expired Reset Prompt */}
-            {isHost && ["filling", "almost_full"].includes(session.status) && (() => {
-              const start = new Date(session.lobby_reset_at || session.created_at).getTime();
-              const elapsed = (Date.now() - start) / 1000;
-              return elapsed >= 1800;
-            })() && (
+            {isHost && session.lobby_expired && ["filling", "almost_full"].includes(session.status) && (
               <div
                 className="bg-red-500/10 border border-red-500/30 p-5"
                 data-testid="lobby-expired-reset"
@@ -554,11 +563,7 @@ export default function SessionPage() {
             )}
 
             {/* Lobby Expired — Player View */}
-            {!isHost && ["filling", "almost_full"].includes(session.status) && (() => {
-              const start = new Date(session.lobby_reset_at || session.created_at).getTime();
-              const elapsed = (Date.now() - start) / 1000;
-              return elapsed >= 1800;
-            })() && (
+            {!isHost && session.lobby_expired && ["filling", "almost_full"].includes(session.status) && (
               <div
                 className="bg-red-500/10 border border-red-500/30 p-4 flex items-start gap-3"
                 data-testid="lobby-expired-player"
@@ -675,7 +680,33 @@ export default function SessionPage() {
                 <h3 className="font-heading text-sm uppercase tracking-wider text-muted-foreground mb-3">
                   Your Status
                 </h3>
-                {!hasJoined ? (
+                {session.lobby_expired ? (
+                  <div className="space-y-3" data-testid="expired-readiness-state">
+                    <div className="bg-red-500/10 border border-red-500/25 px-3 py-2.5">
+                      <p className="text-xs text-red-400 font-mono font-bold">
+                        {isHost
+                          ? "This lobby has expired. Reset it with a new match code to continue."
+                          : "This lobby has expired. Wait for the host to reset it with a new match code."}
+                      </p>
+                      <p className="text-[10px] text-red-400/60 font-mono mt-1">
+                        {isHost
+                          ? "Your server state is expired until you reset the lobby."
+                          : "Your status has been reset to interested on the server."}
+                      </p>
+                    </div>
+                    {!isHost && hasJoined && (
+                      <Button
+                        onClick={leaveSession}
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive text-xs"
+                        data-testid="leave-session-btn"
+                      >
+                        Leave Session
+                      </Button>
+                    )}
+                  </div>
+                ) : !hasJoined ? (
                   session.status === "in_progress" ? (
                     <div className="space-y-2" data-testid="in-progress-no-join">
                       <div className="bg-red-500/10 border border-red-500/25 px-3 py-2.5">
@@ -790,12 +821,14 @@ export default function SessionPage() {
                       onChange={(e) => setNewCode(e.target.value)}
                       placeholder="New match code"
                       className="bg-secondary/50 border-white/10 font-mono text-sm"
+                      disabled={session.lobby_expired}
                       data-testid="update-code-input"
                     />
                     <Button
                       onClick={updateMatchCode}
                       variant="outline"
                       size="sm"
+                      disabled={session.lobby_expired}
                       className="border-primary/50 text-primary uppercase tracking-widest font-bold text-[10px] shrink-0"
                       data-testid="update-code-btn"
                     >
@@ -804,7 +837,7 @@ export default function SessionPage() {
                   </div>
                   <Separator className="bg-white/5" />
                   <div className="flex flex-wrap gap-2">
-                    {(session.status === "filling" || session.status === "almost_full") && (
+                    {!session.lobby_expired && (session.status === "filling" || session.status === "almost_full") && (
                       <Button
                         onClick={() => updateSessionStatus("starting")}
                         size="sm"

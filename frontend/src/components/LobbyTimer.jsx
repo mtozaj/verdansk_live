@@ -3,7 +3,13 @@ import { Clock, AlertTriangle } from "lucide-react";
 
 const LOBBY_DURATION = 30 * 60; // 30 minutes in seconds
 
-export const LobbyTimer = ({ lobbyResetAt, status }) => {
+export const LobbyTimer = ({
+  lobbyResetAt,
+  lobbyExpiresAt,
+  lobbyExpired,
+  serverNow,
+  status,
+}) => {
   const [remaining, setRemaining] = useState(null);
 
   useEffect(() => {
@@ -12,16 +18,27 @@ export const LobbyTimer = ({ lobbyResetAt, status }) => {
       return;
     }
 
+    if (lobbyExpired) {
+      setRemaining(0);
+      return;
+    }
+
+    if (!lobbyExpiresAt || !serverNow) {
+      setRemaining(LOBBY_DURATION);
+      return;
+    }
+
     const calc = () => {
-      const start = new Date(lobbyResetAt).getTime();
-      const elapsed = Math.floor((Date.now() - start) / 1000);
-      return Math.max(LOBBY_DURATION - elapsed, 0);
+      const clockOffset = new Date(serverNow).getTime() - Date.now();
+      const nowMs = Date.now() + clockOffset;
+      const expiresAtMs = new Date(lobbyExpiresAt).getTime();
+      return Math.max(Math.floor((expiresAtMs - nowMs) / 1000), 0);
     };
 
     setRemaining(calc());
     const interval = setInterval(() => setRemaining(calc()), 1000);
     return () => clearInterval(interval);
-  }, [lobbyResetAt, status]);
+  }, [lobbyResetAt, lobbyExpiresAt, lobbyExpired, serverNow, status]);
 
   if (remaining === null) return null;
 
