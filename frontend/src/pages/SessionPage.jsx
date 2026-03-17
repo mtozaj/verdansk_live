@@ -413,7 +413,9 @@ export default function SessionPage() {
                     Host Inactive
                   </p>
                   <p className="text-xs text-yellow-500/70 font-mono mt-1">
-                    The host hasn't been active for over 5 minutes. This session may no longer be running.
+                    Last active: {session.host_last_heartbeat
+                      ? new Date(session.host_last_heartbeat).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      : "unknown"}. This session may no longer be running.
                   </p>
                 </div>
               </div>

@@ -107,6 +107,7 @@ def clean(doc):
     doc["ready_count"] = sum(1 for p in ps if p.get("state") in ("joining", "in_lobby"))
     doc["in_lobby_count"] = sum(1 for p in ps if p.get("state") == "in_lobby")
     doc["host_inactive"] = doc.get("host_inactive", False)
+    doc["host_last_heartbeat"] = doc.get("host_last_heartbeat")
     doc["lobby_reset_at"] = doc.get("lobby_reset_at", doc.get("created_at"))
     return doc
 
@@ -515,8 +516,8 @@ async def staleness_cleanup():
                 {"$set": {"status": "ended"}},
             )
 
-            # Host heartbeat check — flag inactive after 5 min
-            heartbeat_cutoff = (now - timedelta(minutes=5)).isoformat()
+            # Host heartbeat check — flag inactive after 10 min
+            heartbeat_cutoff = (now - timedelta(minutes=10)).isoformat()
             inactive_sessions = await db.sessions.find(
                 {
                     "status": {"$nin": ["ended"]},
