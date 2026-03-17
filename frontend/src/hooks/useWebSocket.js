@@ -28,14 +28,20 @@ export function useWebSocket(path, onMessage) {
       ws.onopen = () => {
         if (!alive) return;
         setConnected(true);
-        // Identify this user for accurate online count
-        const pid = localStorage.getItem("rp_player_id");
-        if (pid) {
-          ws.send(JSON.stringify({ type: "identify", player_id: pid }));
-        }
+        // Send presence heartbeat for online tracking
+        const sendPresence = () => {
+          const pid = localStorage.getItem("rp_player_id");
+          if (pid && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "presence", player_id: pid }));
+          }
+        };
+        sendPresence();
         pingTimer.current = setInterval(() => {
-          if (ws.readyState === WebSocket.OPEN) ws.send("ping");
-        }, 25000);
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send("ping");
+            sendPresence();
+          }
+        }, 10000);
       };
 
       ws.onmessage = (e) => {

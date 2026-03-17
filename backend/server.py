@@ -71,21 +71,22 @@ class ChatMsg(BaseModel):
 class WSManager:
     def __init__(self):
         self.rooms: Dict[str, List[WebSocket]] = {}
-        self.online_users: Dict[WebSocket, str] = {}  # ws -> player_id
+        self.presence: Dict[str, float] = {}  # player_id -> last_seen timestamp
+        self.presence_ttl = 30  # seconds before considered offline
 
     async def connect(self, room: str, ws: WebSocket):
         await ws.accept()
         self.rooms.setdefault(room, []).append(ws)
 
-    def identify(self, ws: WebSocket, player_id: str):
-        self.online_users[ws] = player_id
+    def heartbeat(self, player_id: str):
+        import time
+        self.presence[player_id] = time.time()
 
     def disconnect(self, room: str, ws: WebSocket):
         if room in self.rooms:
             self.rooms[room] = [c for c in self.rooms[room] if c != ws]
             if not self.rooms[room]:
                 del self.rooms[room]
-        self.online_users.pop(ws, None)
 
     async def broadcast(self, room: str, data: dict):
         dead = []
@@ -97,10 +98,15 @@ class WSManager:
         for ws in dead:
             if room in self.rooms and ws in self.rooms[room]:
                 self.rooms[room].remove(ws)
-            self.online_users.pop(ws, None)
 
-    def unique_online_count(self) -> int:
-        return len(set(self.online_users.values()))
+    def online_count(self) -> int:
+        import time
+        now = time.time()
+        # Clean up stale entries while counting
+        stale = [pid for pid, ts in self.presence.items() if now - ts > self.presence_ttl]
+        for pid in stale:
+            del self.presence[pid]
+        return len(self.presence)
 
 
 mgr = WSManager()
@@ -424,7 +430,7 @@ async def get_stats():
     return {
         "active_sessions": active,
         "total_players": r[0]["total"] if r else 0,
-        "online_viewers": mgr.unique_online_count(),
+        "online_viewers": mgr.online_count(),
     }
 
 
@@ -442,8 +448,8 @@ async def ws_lobby(ws: WebSocket):
                 try:
                     import json
                     msg = json.loads(data)
-                    if msg.get("type") == "identify" and msg.get("player_id"):
-                        mgr.identify(ws, msg["player_id"])
+                    if msg.get("type") == "presence" and msg.get("player_id"):
+                        mgr.heartbeat(msg["player_id"])
                 except Exception:
                     pass
     except (WebSocketDisconnect, Exception):
@@ -477,8 +483,8 @@ async def ws_session(ws: WebSocket, sid: str):
                                 result = clean(updated)
                                 await mgr.broadcast(room, {"type": "session_updated", "session": result})
                                 await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
-                    elif msg.get("type") == "identify" and msg.get("player_id"):
-                        mgr.identify(ws, msg["player_id"])
+                    elif msg.get("type") == "presence" and msg.get("player_id"):
+                        mgr.heartbeat(msg["player_id"])
                 except Exception:
                     pass
     except (WebSocketDisconnect, Exception):
