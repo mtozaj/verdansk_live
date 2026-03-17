@@ -92,11 +92,7 @@ export default function HomePage() {
   useWebSocket("/api/ws/lobby", handleWsMessage);
 
   const sorted = [...sessions].sort((a, b) => {
-    const priority = { starting: 4, almost_full: 3, filling: 2, in_progress: 1 };
-    const pa = priority[a.status] || 0;
-    const pb = priority[b.status] || 0;
-    if (pa !== pb) return pb - pa;
-    return b.ready_count - a.ready_count;
+    return new Date(b.created_at) - new Date(a.created_at);
   });
 
   return (
