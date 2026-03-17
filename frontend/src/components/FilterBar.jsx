@@ -21,9 +21,13 @@ export const FilterBar = ({ filters, onChange }) => {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Regions</SelectItem>
-          <SelectItem value="NA">NA</SelectItem>
-          <SelectItem value="EU">EU</SelectItem>
-          <SelectItem value="ASIA">Asia</SelectItem>
+          <SelectItem value="North America">North America</SelectItem>
+          <SelectItem value="South America">South America</SelectItem>
+          <SelectItem value="Europe">Europe</SelectItem>
+          <SelectItem value="Middle East">Middle East</SelectItem>
+          <SelectItem value="Africa">Africa</SelectItem>
+          <SelectItem value="Asia">Asia</SelectItem>
+          <SelectItem value="Oceania">Oceania</SelectItem>
           <SelectItem value="OCE">Oceania</SelectItem>
           <SelectItem value="SA">South America</SelectItem>
         </SelectContent>

@@ -29,7 +29,7 @@ export const CreateSessionDialog = ({ open, onOpenChange }) => {
   const [form, setForm] = useState({
     title: "",
     match_code: "",
-    region: "NA",
+    region: "North America",
     platform: "Cross-play",
   });
 
@@ -57,7 +57,7 @@ export const CreateSessionDialog = ({ open, onOpenChange }) => {
         title: "",
         match_code: "",
         map_name: "Verdansk",
-        region: "NA",
+        region: "North America",
         game_mode: "Battle Royale",
         platform: "Cross-play",
         min_players: 24,
@@ -124,9 +124,13 @@ export const CreateSessionDialog = ({ open, onOpenChange }) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="NA">North America</SelectItem>
-                <SelectItem value="EU">Europe</SelectItem>
-                <SelectItem value="ASIA">Asia</SelectItem>
+                <SelectItem value="North America">North America</SelectItem>
+                <SelectItem value="South America">South America</SelectItem>
+                <SelectItem value="Europe">Europe</SelectItem>
+                <SelectItem value="Middle East">Middle East</SelectItem>
+                <SelectItem value="Africa">Africa</SelectItem>
+                <SelectItem value="Asia">Asia</SelectItem>
+                <SelectItem value="Oceania">Oceania</SelectItem>
                 <SelectItem value="OCE">Oceania</SelectItem>
                 <SelectItem value="SA">South America</SelectItem>
               </SelectContent>
