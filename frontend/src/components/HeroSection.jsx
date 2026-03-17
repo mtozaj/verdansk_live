@@ -67,7 +67,7 @@ export const HeroSection = ({ stats }) => {
                   {stats?.online_viewers || 0}
                 </span>
                 <span className="text-muted-foreground ml-1">
-                  online now
+                  users online
                 </span>
               </span>
             </div>
