@@ -396,7 +396,8 @@ export default function SessionPage() {
   const codeUnlocked =
     isHost ||
     myPlayer?.state === "joining" ||
-    myPlayer?.state === "in_lobby";
+    myPlayer?.state === "in_lobby" ||
+    session?.status === "in_progress";
 
   return (
     <div className="min-h-screen" data-testid="session-page">
@@ -465,6 +466,24 @@ export default function SessionPage() {
                 <span>{session.platform}</span>
               </div>
             </div>
+
+            {/* In Progress Warning */}
+            {session.status === "in_progress" && (
+              <div
+                className="bg-red-500/10 border border-red-500/30 p-4 flex items-start gap-3"
+                data-testid="in-progress-banner"
+              >
+                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-heading text-sm uppercase tracking-wider text-red-400 font-bold">
+                    Match In Progress
+                  </p>
+                  <p className="text-xs text-red-400/70 font-mono mt-1">
+                    This match is in progress. The game has already started and you may not be able to join with the current code.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Host Inactive Warning */}
             {session.host_inactive && session.status !== "ended" && (
@@ -652,19 +671,39 @@ export default function SessionPage() {
                   Your Status
                 </h3>
                 {!hasJoined ? (
-                  <div className="space-y-2">
-                    <Button
-                      onClick={() => joinSession("interested")}
-                      className="uppercase tracking-widest font-bold text-xs active:scale-95 glow-primary"
-                      data-testid="join-session-btn"
-                    >
-                      I'm Interested
-                    </Button>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      Join to follow this session. Commit to joining to unlock
-                      the match code.
-                    </p>
-                  </div>
+                  session.status === "in_progress" ? (
+                    <div className="space-y-2" data-testid="in-progress-no-join">
+                      <div className="bg-red-500/10 border border-red-500/25 px-3 py-2.5">
+                        <p className="text-xs text-red-400 font-mono font-bold">
+                          This match has already started.
+                        </p>
+                        <p className="text-[10px] text-red-400/60 font-mono mt-1">
+                          Wait for the next session or check other active lobbies.
+                        </p>
+                      </div>
+                      <Button
+                        disabled
+                        className="uppercase tracking-widest font-bold text-xs opacity-40 cursor-not-allowed"
+                        data-testid="join-session-btn-disabled"
+                      >
+                        I'm Interested
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Button
+                        onClick={() => joinSession("interested")}
+                        className="uppercase tracking-widest font-bold text-xs active:scale-95 glow-primary"
+                        data-testid="join-session-btn"
+                      >
+                        I'm Interested
+                      </Button>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        Join to follow this session. Commit to joining to unlock
+                        the match code.
+                      </p>
+                    </div>
+                  )
                 ) : myPlayer?.state === "interested" ? (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 mb-1">
