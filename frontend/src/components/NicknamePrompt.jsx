@@ -12,12 +12,12 @@ import { Crosshair } from "lucide-react";
 import { usePlayer } from "@/hooks/usePlayer";
 
 export const NicknamePrompt = () => {
-  const { hasNickname, setNickname, rulesAccepted } = usePlayer();
+  const { hasNickname, setNickname } = usePlayer();
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(!hasNickname);
 
   // Lock body scroll on iOS while dialog is open
-  const isVisible = open && !hasNickname && rulesAccepted;
+  const isVisible = open && !hasNickname;
   useEffect(() => {
     if (!isVisible) return;
     const scrollY = window.scrollY;
@@ -47,7 +47,6 @@ export const NicknamePrompt = () => {
   };
 
   if (hasNickname) return null;
-  if (!rulesAccepted) return null;
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>

@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Crosshair, Plus, Users } from "lucide-react";
+import { Crosshair, Plus, Users, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlayer } from "@/hooks/usePlayer";
 import { CreateSessionDialog } from "@/components/CreateSessionDialog";
+import { HelpDialog } from "@/components/HelpDialog";
 
 export const Header = ({ stats }) => {
   const { nickname } = usePlayer();
   const [createOpen, setCreateOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   return (
     <>
@@ -61,6 +63,13 @@ export const Header = ({ stats }) => {
                 {nickname}
               </span>
             )}
+            <button
+              onClick={() => setHelpOpen(true)}
+              className="text-muted-foreground hover:text-primary transition-colors"
+              data-testid="help-btn"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
             <Button
               onClick={() => setCreateOpen(true)}
               className="uppercase tracking-widest font-bold text-xs active:scale-95"
@@ -75,6 +84,7 @@ export const Header = ({ stats }) => {
       </header>
 
       <CreateSessionDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <HelpDialog open={helpOpen} onOpenChange={setHelpOpen} />
     </>
   );
 };

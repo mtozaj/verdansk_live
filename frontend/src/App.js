@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import { PlayerProvider } from "@/hooks/usePlayer";
-import { WelcomeRules } from "@/components/WelcomeRules";
 import "@/App.css";
 import HomePage from "@/pages/HomePage";
 import SessionPage from "@/pages/SessionPage";
@@ -23,7 +22,6 @@ function App() {
             },
           }}
         />
-        <WelcomeRules />
         <div className="min-h-screen">
           <Routes>
             <Route path="/" element={<HomePage />} />
