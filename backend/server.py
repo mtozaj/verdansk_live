@@ -335,7 +335,7 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
             # Always reset non-host players from in_lobby back to joining on code change
             updated_players = []
             for p in s.get("players", []):
-                if p["state"] == "in_lobby" and p["player_id"] != s["host_id"]:
+                if p["player_id"] != s["host_id"] and p["state"] in ("joining", "in_lobby"):
                     p["state"] = "joining"
                     p["needs_reconfirm"] = True
                 updated_players.append(p)
@@ -469,10 +469,10 @@ async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
 
     now = datetime.now(timezone.utc).isoformat()
 
-    # Move in_lobby players back to joining (except host)
+    # Move in_lobby players back to joining and flag all joining players for reconfirm (except host)
     updated_players = []
     for p in s.get("players", []):
-        if p["state"] == "in_lobby" and p["player_id"] != s["host_id"]:
+        if p["player_id"] != s["host_id"] and p["state"] in ("joining", "in_lobby"):
             p["state"] = "joining"
             p["needs_reconfirm"] = True
         updated_players.append(p)
