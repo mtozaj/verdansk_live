@@ -530,9 +530,16 @@ async def get_chat(sid: str, limit: int = 50):
 
 @api_router.get("/stats")
 async def get_stats():
-    active = await db.sessions.count_documents({"status": {"$nin": ["ended"]}})
+    active_filter = {
+        "status": {"$nin": ["ended"]},
+        "$or": [
+            {"lobby_expired_at": {"$exists": False}},
+            {"lobby_expired_at": None},
+        ],
+    }
+    active = await db.sessions.count_documents(active_filter)
     pipeline = [
-        {"$match": {"status": {"$nin": ["ended"]}}},
+        {"$match": active_filter},
         {"$project": {"count": {"$size": {"$ifNull": ["$players", []]}}}},
         {"$group": {"_id": None, "total": {"$sum": "$count"}}},
     ]
