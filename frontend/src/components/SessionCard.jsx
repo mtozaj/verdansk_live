@@ -92,7 +92,11 @@ export const SessionCard = ({ session, featured }) => {
             <span>{timeAgo(session.created_at)}</span>
           </div>
           {session.code_updated_at && (
-            <div className="flex items-center gap-1">
+            <div className={`flex items-center gap-1 ${
+              (Date.now() - new Date(session.code_updated_at).getTime()) < 300000
+                ? "text-green-400"
+                : ""
+            }`}>
               <RefreshCw className="w-3 h-3" />
               <span>code updated {timeAgo(session.code_updated_at)}</span>
             </div>

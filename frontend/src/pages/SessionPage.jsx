@@ -78,10 +78,12 @@ const STATE_COLORS = {
 
 function CodeRefreshedAgo({ timestamp }) {
   const [label, setLabel] = useState("");
+  const [isRecent, setIsRecent] = useState(false);
 
   useEffect(() => {
     const calc = () => {
       const secs = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
+      setIsRecent(secs < 300);
       if (secs < 60) return "just now";
       const mins = Math.floor(secs / 60);
       if (mins < 60) return `${mins}m ago`;
@@ -94,7 +96,7 @@ function CodeRefreshedAgo({ timestamp }) {
   }, [timestamp]);
 
   return (
-    <p className="text-xs font-mono text-muted-foreground mt-2" data-testid="code-refreshed-ago">
+    <p className={`text-xs font-mono mt-2 ${isRecent ? "text-green-400" : "text-muted-foreground"}`} data-testid="code-refreshed-ago">
       <RefreshCw className="w-3 h-3 inline mr-1" />
       Code refreshed {label}
     </p>
