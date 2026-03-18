@@ -335,6 +335,16 @@ export default function SessionPage() {
     return () => clearTimeout(codeChangedTimer.current);
   }, [codeChanged]);
 
+  // Auto-close edit mode if session state changes to one that disallows editing
+  useEffect(() => {
+    if (!editingCode) return;
+    const canEdit = ["filling", "almost_full"].includes(session?.status) && !session?.lobby_expired;
+    if (!canEdit) {
+      setEditingCode(false);
+      setEditCode("");
+    }
+  }, [session?.status, session?.lobby_expired, editingCode]);
+
   const copyCode = () => {
     if (session?.match_code) {
       navigator.clipboard.writeText(session.match_code);
@@ -608,7 +618,7 @@ export default function SessionPage() {
             />
 
             {/* Lobby Expired Reset Prompt */}
-            {isHost && session.lobby_expired && ["filling", "almost_full", "starting"].includes(session.status) && (
+            {isHost && session.lobby_expired && ["filling", "almost_full", "starting", "in_progress"].includes(session.status) && (
               <div
                 className="bg-red-500/10 border border-red-500/30 p-5"
                 data-testid="lobby-expired-reset"
@@ -644,7 +654,7 @@ export default function SessionPage() {
             )}
 
             {/* Lobby Expired — Player View */}
-            {!isHost && session.lobby_expired && ["filling", "almost_full", "starting"].includes(session.status) && (
+            {!isHost && session.lobby_expired && ["filling", "almost_full", "starting", "in_progress"].includes(session.status) && (
               <div
                 className="bg-red-500/10 border border-red-500/30 p-4 flex items-start gap-3"
                 data-testid="lobby-expired-player"
@@ -713,7 +723,7 @@ export default function SessionPage() {
                         <Play className="w-3 h-3 mr-1" /> Start Match
                       </Button>
                     )}
-                    {(session.status === "starting" || session.status === "in_progress") && (
+                    {!session.lobby_expired && (session.status === "starting" || session.status === "in_progress") && (
                       <Button
                         onClick={() => {
                           const code = newCode.trim();
@@ -823,7 +833,7 @@ export default function SessionPage() {
                             <Copy className="w-4 h-4" />
                           )}
                         </Button>
-                        {isHost && session.status !== "ended" && !session.lobby_expired && (
+                        {isHost && ["filling", "almost_full"].includes(session.status) && !session.lobby_expired && (
                           <Button
                             onClick={() => { setEditCode(session.match_code); setEditingCode(true); }}
                             variant="outline"
