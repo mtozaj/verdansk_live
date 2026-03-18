@@ -17,17 +17,17 @@ function timeAgo(dateStr) {
 
 const STATUS_STYLES = {
   filling: { label: "Filling", cls: "bg-primary/20 text-primary border-primary/30" },
-  almost_full: { label: "Almost Full", cls: "bg-green-500/20 text-green-400 border-green-500/30" },
-  starting: { label: "Match Starting Soon", cls: "bg-green-500/20 text-green-300 border-green-500/30" },
-  in_progress: { label: "Match Started", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  almost_full: { label: "Almost Full", cls: "bg-primary/20 text-primary border-primary/30" },
+  starting: { label: "Match Starting Soon", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  in_progress: { label: "Match Started", cls: "bg-green-500/20 text-green-400 border-green-500/30" },
   ended: { label: "Ended", cls: "bg-muted text-muted-foreground border-muted" },
 };
 
 const ACCENT_COLORS = {
   filling: "bg-primary",
-  almost_full: "bg-green-500",
-  starting: "bg-green-400",
-  in_progress: "bg-blue-500",
+  almost_full: "bg-primary",
+  starting: "bg-blue-500",
+  in_progress: "bg-green-500",
   ended: "bg-muted-foreground",
 };
 

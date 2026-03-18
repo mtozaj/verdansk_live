@@ -50,18 +50,18 @@ const STATUS_MAP = {
   filling: { label: "Filling", color: "text-primary", bg: "bg-primary/20" },
   almost_full: {
     label: "Almost Full",
-    color: "text-green-400",
-    bg: "bg-green-500/20",
+    color: "text-primary",
+    bg: "bg-primary/20",
   },
   starting: {
     label: "Match Starting Soon",
-    color: "text-green-300",
-    bg: "bg-green-500/20",
+    color: "text-blue-400",
+    bg: "bg-blue-500/20",
   },
   in_progress: {
     label: "Match Started",
-    color: "text-blue-400",
-    bg: "bg-blue-500/20",
+    color: "text-green-400",
+    bg: "bg-green-500/20",
   },
   ended: {
     label: "Ended",
@@ -72,7 +72,7 @@ const STATUS_MAP = {
 
 const STATE_COLORS = {
   interested: "bg-yellow-500",
-  joining: "bg-green-400",
+  joining: "bg-blue-400",
   in_lobby: "bg-emerald-500",
 };
 
@@ -157,9 +157,9 @@ function JoiningStatus({ onConfirm, onLeave, isHost, copied, codeChanged, matchC
     <div className="space-y-3" data-testid="joining-status">
       {/* Steps indicator */}
       <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest">
-        <span className="text-emerald-500 line-through opacity-60">1. Copy code</span>
+        <span className="text-blue-400 line-through opacity-60">1. Copy code</span>
         <span className="text-muted-foreground/40">/</span>
-        <span className="text-emerald-500 line-through opacity-60">2. Join in Warzone</span>
+        <span className="text-blue-400 line-through opacity-60">2. Join in Warzone</span>
         <span className="text-muted-foreground/40">/</span>
         <span className="text-yellow-400 font-bold">3. Confirm below</span>
       </div>
@@ -688,7 +688,7 @@ export default function SessionPage() {
                       <Button
                         onClick={() => updateSessionStatus("starting")}
                         size="sm"
-                        className="uppercase tracking-widest font-bold text-[10px] bg-green-600 hover:bg-green-700 text-white"
+                        className="uppercase tracking-widest font-bold text-[10px] bg-blue-600 hover:bg-blue-700 text-white"
                         data-testid="start-session-btn"
                       >
                         <Play className="w-3 h-3 mr-1" /> Lobby Is Ready
@@ -698,7 +698,7 @@ export default function SessionPage() {
                       <Button
                         onClick={() => updateSessionStatus("in_progress")}
                         size="sm"
-                        className="uppercase tracking-widest font-bold text-[10px] bg-blue-600 hover:bg-blue-700 text-white"
+                        className="uppercase tracking-widest font-bold text-[10px] bg-green-600 hover:bg-green-700 text-white"
                         data-testid="in-progress-btn"
                       >
                         <Play className="w-3 h-3 mr-1" /> Start Match
@@ -955,7 +955,7 @@ export default function SessionPage() {
                     </div>
                     <Button
                       onClick={() => updateState("joining")}
-                      className="uppercase tracking-widest font-bold text-xs active:scale-95 bg-green-600 hover:bg-green-700 text-white"
+                      className="uppercase tracking-widest font-bold text-xs active:scale-95 bg-blue-600 hover:bg-blue-700 text-white"
                       data-testid="state-btn-joining"
                     >
                       <Lock className="w-3 h-3 mr-1.5" />
