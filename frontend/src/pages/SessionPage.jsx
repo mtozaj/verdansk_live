@@ -478,11 +478,6 @@ export default function SessionPage() {
                 <div className="flex items-center gap-1">
                   <Shield className="w-3 h-3" />
                   {session.host_name}
-                  {session.host_success_rate > 0 && (
-                    <span className="text-primary ml-1">
-                      {Math.round(session.host_success_rate * 100)}% launch rate
-                    </span>
-                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />

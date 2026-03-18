@@ -42,7 +42,6 @@ export const SessionCard = ({ session, featured }) => {
     (session.ready_count / session.min_players) * 100,
     100
   );
-  const trustPercent = Math.round((session.host_success_rate || 0) * 100);
 
   return (
     <div
@@ -87,9 +86,6 @@ export const SessionCard = ({ session, featured }) => {
           <div className="flex items-center gap-1">
             <Shield className="w-3 h-3" />
             <span>{session.host_name}</span>
-            {trustPercent > 0 && (
-              <span className="text-primary">{trustPercent}%</span>
-            )}
           </div>
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
