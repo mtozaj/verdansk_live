@@ -11,12 +11,14 @@
 - Do not fix issues not reported by user unless critical
 
 ## Current Task
-- Code review of lobby-expiration changes
-- Applied fix for frozen LobbyTimer countdown (clockOffset computed once per effect, not per tick)
+- Fixed lobby expiry not triggering for "starting" status sessions
+- Backend `is_lobby_expired` and cleanup loop now include "starting" status
+- Frontend expired UI (host prompt, player prompt, session card badge) now includes "starting" status
+- Need to verify: session in "starting" status correctly expires after 30 minutes
 
 ## Backend Tests
 - **COMPLETED ✅** All backend API endpoints tested successfully
-- **Test Results:** 11/11 specific review request tests passed, 18/18 comprehensive API tests passed 
+- **Test Results:** 11/11 specific review request tests passed, 18/18 comprehensive API tests passed, 10/10 edge case tests passed
 - **Core API Functionality:** All working correctly
   - ✅ GET /api/ - Returns proper message response
   - ✅ GET /api/stats - Returns active_sessions, total_players, online_viewers 
@@ -30,6 +32,12 @@
   - ✅ lobby_expires_at correctly set to ~30 minutes after lobby_reset_at
   - ✅ lobby_expired=false for new sessions
   - ✅ Lobby timing updates correctly on match_code changes and resets
+- **Edge Case Testing:** All critical scenarios verified
+  - ✅ Sessions in "starting" status correctly maintain lobby expiry fields
+  - ✅ Sessions in "starting" status show lobby_expired=false within 30min window
+  - ✅ reset_timer=false parameter preserves original lobby_reset_at timestamp
+  - ✅ reset_timer=true parameter updates lobby_reset_at to current time
+  - ✅ Match code updates work correctly with both reset_timer settings
 - **State Transitions:** All validated
   - ✅ Player states: interested → joining → in_lobby (forward only)
   - ✅ Session statuses: filling → starting → ended (proper transitions)

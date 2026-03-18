@@ -33,7 +33,7 @@ const ACCENT_COLORS = {
 
 export const SessionCard = ({ session, featured }) => {
   const navigate = useNavigate();
-  const isExpired = session.lobby_expired && ["filling", "almost_full"].includes(session.status);
+  const isExpired = session.lobby_expired && ["filling", "almost_full", "starting"].includes(session.status);
   const status = isExpired
     ? { label: "Expired", cls: "bg-red-500/20 text-red-400 border-red-500/30" }
     : STATUS_STYLES[session.status] || STATUS_STYLES.filling;

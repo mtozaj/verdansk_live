@@ -555,7 +555,7 @@ export default function SessionPage() {
             />
 
             {/* Lobby Expired Reset Prompt */}
-            {isHost && session.lobby_expired && ["filling", "almost_full"].includes(session.status) && (
+            {isHost && session.lobby_expired && ["filling", "almost_full", "starting"].includes(session.status) && (
               <div
                 className="bg-red-500/10 border border-red-500/30 p-5"
                 data-testid="lobby-expired-reset"
@@ -591,7 +591,7 @@ export default function SessionPage() {
             )}
 
             {/* Lobby Expired — Player View */}
-            {!isHost && session.lobby_expired && ["filling", "almost_full"].includes(session.status) && (
+            {!isHost && session.lobby_expired && ["filling", "almost_full", "starting"].includes(session.status) && (
               <div
                 className="bg-red-500/10 border border-red-500/30 p-4 flex items-start gap-3"
                 data-testid="lobby-expired-player"

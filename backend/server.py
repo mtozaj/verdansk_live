@@ -134,7 +134,7 @@ def get_lobby_expiry_datetime(session: dict) -> Optional[datetime]:
 
 
 def is_lobby_expired(session: Optional[dict], now: Optional[datetime] = None) -> bool:
-    if not session or session.get("status") not in ("filling", "almost_full"):
+    if not session or session.get("status") not in ("filling", "almost_full", "starting"):
         return False
     expires_at = get_lobby_expiry_datetime(session)
     if not expires_at:
@@ -628,7 +628,7 @@ async def staleness_cleanup():
 
             expired_lobbies = await db.sessions.find(
                 {
-                    "status": {"$in": ["filling", "almost_full"]},
+                    "status": {"$in": ["filling", "almost_full", "starting"]},
                     "lobby_reset_at": {"$lt": cutoff},
                     "$or": [
                         {"lobby_expired_at": {"$exists": False}},
