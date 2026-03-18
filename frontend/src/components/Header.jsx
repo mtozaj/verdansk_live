@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Crosshair, Plus, Users, HelpCircle } from "lucide-react";
+import { Crosshair, Plus, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlayer } from "@/hooks/usePlayer";
 import { CreateSessionDialog } from "@/components/CreateSessionDialog";
@@ -28,31 +28,6 @@ export const Header = ({ stats }) => {
               Rally Point
             </span>
           </Link>
-
-          <div className="hidden md:flex items-center gap-6 text-sm font-mono">
-            {stats && (
-              <>
-                <div
-                  className="flex items-center gap-2"
-                  data-testid="stat-sessions"
-                >
-                  <div className="live-dot" />
-                  <span className="text-muted-foreground">
-                    {stats.active_sessions} Active
-                  </span>
-                </div>
-                <div
-                  className="flex items-center gap-2"
-                  data-testid="stat-players"
-                >
-                  <Users className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">
-                    {stats.total_players} Players
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
 
           <div className="flex items-center gap-3">
             {nickname && (
