@@ -235,6 +235,17 @@ export default function SessionPage() {
       if (!chatVisibleRef.current) {
         setUnreadCount((prev) => prev + 1);
       }
+      // Mention toast — notify if someone mentioned you and you didn't send it
+      if (
+        data.message.player_id !== playerId &&
+        nickname &&
+        data.message.message &&
+        data.message.message.toLowerCase().includes(`@${nickname.toLowerCase()}`)
+      ) {
+        toast(`${data.message.nickname} mentioned you`, {
+          description: data.message.message,
+        });
+      }
     }
     if (data.type === "code_changed") {
       toast.info("Match code has been updated!");
@@ -247,7 +258,7 @@ export default function SessionPage() {
       expiryToastShownRef.current = true;
       toast.warning("Warzone lobby expired - all players reset to interested");
     }
-  }, []);
+  }, [playerId, nickname]);
 
   const { send: wsSend, connected: wsConnected } = useWebSocket(`/api/ws/session/${id}`, handleWs);
 
@@ -959,6 +970,7 @@ export default function SessionPage() {
                 currentPlayerId={playerId}
                 hostId={session?.host_id}
                 unreadCount={unreadCount}
+                players={session?.players || []}
               />
             </div>
           </div>
