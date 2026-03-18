@@ -101,7 +101,7 @@ function CodeRefreshedAgo({ timestamp }) {
   );
 }
 
-function JoiningStatus({ onConfirm, onLeave, isHost, copied }) {
+function JoiningStatus({ onConfirm, onLeave, isHost, copied, codeChanged, matchCode }) {
   const [nudge, setNudge] = useState(false);
 
   // Auto-nudge 30s after code is copied
@@ -110,6 +110,48 @@ function JoiningStatus({ onConfirm, onLeave, isHost, copied }) {
     const timer = setTimeout(() => setNudge(true), 30000);
     return () => clearTimeout(timer);
   }, [copied]);
+
+  // Code was updated — show warning variant
+  if (codeChanged) {
+    return (
+      <div className="space-y-3" data-testid="joining-status-code-updated">
+        <div className="bg-primary/15 border border-primary/40 px-3 py-3">
+          <p className="text-sm text-primary font-mono font-bold uppercase tracking-wider">
+            Code Updated
+          </p>
+          <p className="text-xs text-primary/80 font-mono mt-1.5">
+            The host has updated the match code. Re-enter the lobby with the new code and confirm below.
+          </p>
+          {matchCode && (
+            <div className="mt-2 bg-black/40 border border-primary/30 px-3 py-2 font-mono text-lg tracking-widest text-primary font-bold">
+              {matchCode}
+            </div>
+          )}
+        </div>
+
+        <Button
+          onClick={onConfirm}
+          className="uppercase tracking-widest font-bold text-sm active:scale-95 bg-emerald-600 hover:bg-emerald-700 text-white w-full h-12 shadow-lg shadow-emerald-600/20 animate-pulse hover:animate-none"
+          data-testid="state-btn-in_lobby"
+        >
+          <Check className="w-4 h-4 mr-2" />
+          I'm In The Lobby
+        </Button>
+
+        {!isHost && (
+          <Button
+            onClick={onLeave}
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive text-xs"
+            data-testid="leave-session-btn"
+          >
+            Leave Session
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3" data-testid="joining-status">
@@ -938,6 +980,8 @@ export default function SessionPage() {
                     onLeave={leaveSession}
                     isHost={isHost}
                     copied={copied}
+                    codeChanged={codeChanged}
+                    matchCode={session?.match_code}
                   />
                 ) : (
                   <div className="space-y-3">
