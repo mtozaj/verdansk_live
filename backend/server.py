@@ -312,7 +312,7 @@ async def get_session(sid: str):
 
 
 @api_router.patch("/sessions/{sid}")
-async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")):
+async def update_session(sid: str, data: SessionUpdate, host_id: str = Query(""), reset_timer: bool = Query(True)):
     s = await db.sessions.find_one({"id": sid})
     if not s:
         raise HTTPException(404, "Session not found")
@@ -324,20 +324,21 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
     code_changed = False
     if data.match_code is not None:
         upd["match_code"] = data.match_code
-        upd["lobby_reset_at"] = upd["updated_at"]
-        upd["lobby_expired_at"] = None
         code_changed = True
-        current_status = s.get("status", "filling")
-        # Reset status if in starting/in_progress
-        if current_status in ("starting", "in_progress"):
-            upd["status"] = "filling"
-        # Always reset non-host players from in_lobby back to joining on code change
-        updated_players = []
-        for p in s.get("players", []):
-            if p["state"] == "in_lobby" and p["player_id"] != s["host_id"]:
-                p["state"] = "joining"
-            updated_players.append(p)
-        upd["players"] = updated_players
+        if reset_timer:
+            upd["lobby_reset_at"] = upd["updated_at"]
+            upd["lobby_expired_at"] = None
+            current_status = s.get("status", "filling")
+            # Reset status if in starting/in_progress
+            if current_status in ("starting", "in_progress"):
+                upd["status"] = "filling"
+            # Always reset non-host players from in_lobby back to joining on code change
+            updated_players = []
+            for p in s.get("players", []):
+                if p["state"] == "in_lobby" and p["player_id"] != s["host_id"]:
+                    p["state"] = "joining"
+                updated_players.append(p)
+            upd["players"] = updated_players
     if data.status is not None:
         current_status = s.get("status", "filling")
         allowed_statuses = VALID_STATUS_TRANSITIONS.get(current_status, [])

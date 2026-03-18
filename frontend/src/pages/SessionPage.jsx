@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   RotateCcw,
   MessageSquare,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -179,6 +180,8 @@ export default function SessionPage() {
   const [codeChanged, setCodeChanged] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatVisible, setChatVisible] = useState(false);
+  const [editingCode, setEditingCode] = useState(false);
+  const [editCode, setEditCode] = useState("");
   const codeChangedTimer = useRef(null);
   const expiryToastShownRef = useRef(false);
   const chatSectionRef = useRef(null);
@@ -292,6 +295,23 @@ export default function SessionPage() {
       setCodeChanged(false);
       toast.success("Code copied!");
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const editMatchCode = async () => {
+    const code = editCode.trim();
+    if (!code) return;
+    try {
+      const res = await axios.patch(
+        `${API}/sessions/${id}?host_id=${playerId}&reset_timer=false`,
+        { match_code: code.toUpperCase() }
+      );
+      setSession(res.data);
+      setEditingCode(false);
+      setEditCode("");
+      toast.success("Code corrected (timer unchanged)");
+    } catch {
+      toast.error("Failed to update code");
     }
   };
 
@@ -608,30 +628,80 @@ export default function SessionPage() {
               </div>
               {codeUnlocked ? (
                 <div>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex-1 bg-black/40 border px-4 py-3 font-mono text-xl md:text-2xl tracking-widest text-primary font-bold select-all ${
-                        codeChanged ? "border-green-500/50" : "border-primary/30"
-                      }`}
-                      data-testid="match-code-display"
-                    >
-                      {session.match_code}
+                  {editingCode ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={editCode}
+                          onChange={(e) => setEditCode(e.target.value.toUpperCase())}
+                          placeholder="Corrected code"
+                          className="bg-black/40 border-primary/30 font-mono text-lg tracking-widest text-primary font-bold h-12"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") editMatchCode();
+                            if (e.key === "Escape") { setEditingCode(false); setEditCode(""); }
+                          }}
+                          data-testid="edit-code-input"
+                        />
+                        <Button
+                          onClick={editMatchCode}
+                          disabled={!editCode.trim()}
+                          className="h-12 px-4 uppercase tracking-widest font-bold text-xs bg-green-600 hover:bg-green-700 text-white shrink-0"
+                          data-testid="edit-code-save-btn"
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => { setEditingCode(false); setEditCode(""); }}
+                          variant="ghost"
+                          className="h-12 px-3 text-muted-foreground shrink-0"
+                          data-testid="edit-code-cancel-btn"
+                        >
+                          <Square className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground/60 font-mono">
+                        This will only correct the code — it will not reset the lobby timer.
+                      </p>
                     </div>
-                    <Button
-                      onClick={copyCode}
-                      variant="outline"
-                      className="border-primary/50 text-primary hover:bg-primary hover:text-black h-12 px-4 uppercase tracking-widest font-bold text-xs"
-                      data-testid="copy-code-btn"
-                    >
-                      {copied ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
+                  ) : (
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex-1 bg-black/40 border px-4 py-3 font-mono text-xl md:text-2xl tracking-widest text-primary font-bold select-all ${
+                            codeChanged ? "border-green-500/50" : "border-primary/30"
+                          }`}
+                          data-testid="match-code-display"
+                        >
+                          {session.match_code}
+                        </div>
+                        <Button
+                          onClick={copyCode}
+                          variant="outline"
+                          className="border-primary/50 text-primary hover:bg-primary hover:text-black h-12 px-4 uppercase tracking-widest font-bold text-xs"
+                          data-testid="copy-code-btn"
+                        >
+                          {copied ? (
+                            <Check className="w-4 h-4" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </Button>
+                        {isHost && session.status !== "ended" && !session.lobby_expired && (
+                          <Button
+                            onClick={() => { setEditCode(session.match_code); setEditingCode(true); }}
+                            variant="outline"
+                            className="border-white/10 text-muted-foreground hover:text-primary hover:border-primary/50 h-12 px-4"
+                            data-testid="edit-code-btn"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {session.lobby_reset_at && session.lobby_reset_at !== session.created_at && (
+                        <CodeRefreshedAgo timestamp={session.lobby_reset_at} />
                       )}
-                    </Button>
-                  </div>
-                  {session.lobby_reset_at && session.lobby_reset_at !== session.created_at && (
-                    <CodeRefreshedAgo timestamp={session.lobby_reset_at} />
+                    </div>
                   )}
                 </div>
               ) : (
