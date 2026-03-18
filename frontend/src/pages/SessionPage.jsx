@@ -608,6 +608,89 @@ export default function SessionPage() {
               </div>
             )}
 
+            {/* Host Controls */}
+            {isHost && session.status !== "ended" && (
+              <div
+                className="bg-card border border-primary/20 p-5"
+                data-testid="host-controls"
+              >
+                <h3 className="font-heading text-sm uppercase tracking-wider text-primary mb-3">
+                  Host Controls
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      value={newCode}
+                      onChange={(e) => setNewCode(e.target.value)}
+                      placeholder="New lobby? Update and reset with new code."
+                      className="bg-secondary/50 border-white/10 font-mono text-sm"
+                      disabled={session.lobby_expired}
+                      data-testid="update-code-input"
+                    />
+                    <Button
+                      onClick={updateMatchCode}
+                      variant="outline"
+                      size="sm"
+                      disabled={session.lobby_expired}
+                      className="border-primary/50 text-primary uppercase tracking-widest font-bold text-[10px] shrink-0"
+                      data-testid="update-code-btn"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" /> Update
+                    </Button>
+                  </div>
+                  <Separator className="bg-white/5" />
+                  <div className="flex flex-wrap gap-2">
+                    {!session.lobby_expired && (session.status === "filling" || session.status === "almost_full") && (
+                      <Button
+                        onClick={() => updateSessionStatus("starting")}
+                        size="sm"
+                        className="uppercase tracking-widest font-bold text-[10px] bg-green-600 hover:bg-green-700 text-white"
+                        data-testid="start-session-btn"
+                      >
+                        <Play className="w-3 h-3 mr-1" /> Lobby Is Ready
+                      </Button>
+                    )}
+                    {session.status === "starting" && (
+                      <Button
+                        onClick={() => updateSessionStatus("in_progress")}
+                        size="sm"
+                        className="uppercase tracking-widest font-bold text-[10px] bg-blue-600 hover:bg-blue-700 text-white"
+                        data-testid="in-progress-btn"
+                      >
+                        <Play className="w-3 h-3 mr-1" /> Start Match
+                      </Button>
+                    )}
+                    {(session.status === "starting" || session.status === "in_progress") && (
+                      <Button
+                        onClick={() => {
+                          const code = newCode.trim();
+                          if (!code) {
+                            toast.error("Enter a new match code above first");
+                            return;
+                          }
+                          resetLobby(code);
+                        }}
+                        size="sm"
+                        className="uppercase tracking-widest font-bold text-[10px] bg-yellow-600 hover:bg-yellow-700 text-white"
+                        data-testid="reset-lobby-host-btn"
+                      >
+                        <RotateCcw className="w-3 h-3 mr-1" /> Reset Lobby
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => updateSessionStatus("ended")}
+                      variant="destructive"
+                      size="sm"
+                      className="uppercase tracking-widest font-bold text-[10px]"
+                      data-testid="end-session-btn"
+                    >
+                      <Square className="w-3 h-3 mr-1" /> End Session
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Match Code */}
             <div
               className="bg-card border border-white/5 p-5"
@@ -660,8 +743,8 @@ export default function SessionPage() {
                           <Square className="w-4 h-4" />
                         </Button>
                       </div>
-                      <p className="text-[10px] text-muted-foreground/60 font-mono">
-                        This will only correct the code — it will not reset the lobby timer.
+                      <p className="text-[10px] text-green-400 font-mono font-bold">
+                        IMPORTANT: This will only correct the code, it will not reset the lobby timer.
                       </p>
                     </div>
                   ) : (
@@ -883,88 +966,6 @@ export default function SessionPage() {
               </div>
             )}
 
-            {/* Host Controls */}
-            {isHost && session.status !== "ended" && (
-              <div
-                className="bg-card border border-primary/20 p-5"
-                data-testid="host-controls"
-              >
-                <h3 className="font-heading text-sm uppercase tracking-wider text-primary mb-3">
-                  Host Controls
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newCode}
-                      onChange={(e) => setNewCode(e.target.value)}
-                      placeholder="New match code"
-                      className="bg-secondary/50 border-white/10 font-mono text-sm"
-                      disabled={session.lobby_expired}
-                      data-testid="update-code-input"
-                    />
-                    <Button
-                      onClick={updateMatchCode}
-                      variant="outline"
-                      size="sm"
-                      disabled={session.lobby_expired}
-                      className="border-primary/50 text-primary uppercase tracking-widest font-bold text-[10px] shrink-0"
-                      data-testid="update-code-btn"
-                    >
-                      <RefreshCw className="w-3 h-3 mr-1" /> Update
-                    </Button>
-                  </div>
-                  <Separator className="bg-white/5" />
-                  <div className="flex flex-wrap gap-2">
-                    {!session.lobby_expired && (session.status === "filling" || session.status === "almost_full") && (
-                      <Button
-                        onClick={() => updateSessionStatus("starting")}
-                        size="sm"
-                        className="uppercase tracking-widest font-bold text-[10px] bg-green-600 hover:bg-green-700 text-white"
-                        data-testid="start-session-btn"
-                      >
-                        <Play className="w-3 h-3 mr-1" /> Lobby Is Ready
-                      </Button>
-                    )}
-                    {session.status === "starting" && (
-                      <Button
-                        onClick={() => updateSessionStatus("in_progress")}
-                        size="sm"
-                        className="uppercase tracking-widest font-bold text-[10px] bg-blue-600 hover:bg-blue-700 text-white"
-                        data-testid="in-progress-btn"
-                      >
-                        <Play className="w-3 h-3 mr-1" /> Start Match
-                      </Button>
-                    )}
-                    {(session.status === "starting" || session.status === "in_progress") && (
-                      <Button
-                        onClick={() => {
-                          const code = newCode.trim();
-                          if (!code) {
-                            toast.error("Enter a new match code above first");
-                            return;
-                          }
-                          resetLobby(code);
-                        }}
-                        size="sm"
-                        className="uppercase tracking-widest font-bold text-[10px] bg-yellow-600 hover:bg-yellow-700 text-white"
-                        data-testid="reset-lobby-host-btn"
-                      >
-                        <RotateCcw className="w-3 h-3 mr-1" /> Reset Lobby
-                      </Button>
-                    )}
-                    <Button
-                      onClick={() => updateSessionStatus("ended")}
-                      variant="destructive"
-                      size="sm"
-                      className="uppercase tracking-widest font-bold text-[10px]"
-                      data-testid="end-session-btn"
-                    >
-                      <Square className="w-3 h-3 mr-1" /> End Session
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right column */}
