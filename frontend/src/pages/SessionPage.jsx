@@ -622,7 +622,7 @@ export default function SessionPage() {
                     <Input
                       value={newCode}
                       onChange={(e) => setNewCode(e.target.value)}
-                      placeholder="New lobby? Update and reset with new code."
+                      placeholder="New lobby? Enter new code and update."
                       className="bg-secondary/50 border-white/10 font-mono text-sm placeholder:text-[10px] sm:placeholder:text-sm"
                       disabled={session.lobby_expired}
                       data-testid="update-code-input"
@@ -744,7 +744,7 @@ export default function SessionPage() {
                         </Button>
                       </div>
                       <p className="text-[10px] text-green-400 font-mono font-bold">
-                        IMPORTANT: This will only correct the code, it will not reset the lobby timer.
+                        IMPORTANT: This will only correct the code, it will not reset the lobby timer and players.
                       </p>
                     </div>
                   ) : (
