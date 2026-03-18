@@ -66,7 +66,7 @@ function MessageText({ text, players, currentPlayerId }) {
   );
 
   return (
-    <p className="text-foreground/80 mt-0.5">
+    <p className="text-foreground/80 mt-0.5 break-words overflow-hidden">
       {segments.map((seg, i) => {
         if (seg.type === "mention") {
           return (
@@ -263,7 +263,7 @@ export const ChatFeed = ({
             return (
               <div
                 key={msg.id}
-                className={`text-xs font-mono py-1.5 px-2 ${
+                className={`text-xs font-mono py-1.5 px-2 overflow-hidden ${
                   isMsgHost
                     ? "bg-primary/10 border-l-2 border-primary"
                     : isMe
