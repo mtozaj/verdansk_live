@@ -89,7 +89,7 @@ export const SessionCard = ({ session, featured }) => {
           </div>
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            <span>{timeAgo(session.created_at)}</span>
+            <span>{timeAgo(session.updated_at)}</span>
           </div>
         </div>
 
