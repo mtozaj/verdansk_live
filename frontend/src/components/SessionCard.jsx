@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { MapPin, Users, Clock, Shield, ChevronRight, AlertTriangle } from "lucide-react";
+import { MapPin, Users, Clock, Shield, ChevronRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
@@ -89,8 +89,14 @@ export const SessionCard = ({ session, featured }) => {
           </div>
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            <span>{timeAgo(session.updated_at)}</span>
+            <span>{timeAgo(session.created_at)}</span>
           </div>
+          {session.updated_at !== session.created_at && (
+            <div className="flex items-center gap-1">
+              <RefreshCw className="w-3 h-3" />
+              <span>code updated {timeAgo(session.updated_at)}</span>
+            </div>
+          )}
         </div>
 
         <div className="mb-3">
