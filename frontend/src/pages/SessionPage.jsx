@@ -277,8 +277,11 @@ export default function SessionPage() {
       }
     }
     if (data.type === "chat_message") {
-      setMessages((prev) => [...prev, data.message]);
-      if (!chatVisibleRef.current) {
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === data.message.id)) return prev;
+        return [...prev, data.message];
+      });
+      if (data.message.player_id !== playerId && !chatVisibleRef.current) {
         setUnreadCount((prev) => prev + 1);
       }
       // Mention toast — notify if someone mentioned you and you didn't send it
@@ -451,13 +454,19 @@ export default function SessionPage() {
 
   const sendChat = async (message) => {
     try {
-      await axios.post(`${API}/sessions/${id}/chat`, {
+      const res = await axios.post(`${API}/sessions/${id}/chat`, {
         player_id: playerId,
         nickname,
         message,
       });
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === res.data.id)) return prev;
+        return [...prev, res.data];
+      });
+      return true;
     } catch {
-      // silent
+      toast.error("Failed to send message");
+      return false;
     }
   };
 

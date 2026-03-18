@@ -214,10 +214,12 @@ export const ChatFeed = ({
     [showMentions, filteredPlayers, mentionIndex, insertMention]
   );
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (text.trim()) {
-      onSend(text.trim());
+    const msg = text.trim();
+    if (!msg) return;
+    const success = await onSend(msg);
+    if (success) {
       setText("");
       setShowMentions(false);
       setMentionFilter("");
