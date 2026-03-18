@@ -13,7 +13,7 @@ export const LobbyTimer = ({
   const [remaining, setRemaining] = useState(null);
 
   useEffect(() => {
-    if (!lobbyResetAt || !["filling", "almost_full"].includes(status)) {
+    if (!lobbyResetAt || !["filling", "almost_full", "starting"].includes(status)) {
       setRemaining(null);
       return;
     }
