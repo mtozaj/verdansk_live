@@ -982,7 +982,7 @@ export default function SessionPage() {
                     onLeave={leaveSession}
                     isHost={isHost}
                     copied={copied}
-                    codeChanged={pendingCodeConfirm}
+                    codeChanged={pendingCodeConfirm || myPlayer?.needs_reconfirm}
                     matchCode={session?.match_code}
                   />
                 ) : (

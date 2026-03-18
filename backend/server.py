@@ -337,6 +337,7 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
             for p in s.get("players", []):
                 if p["state"] == "in_lobby" and p["player_id"] != s["host_id"]:
                     p["state"] = "joining"
+                    p["needs_reconfirm"] = True
                 updated_players.append(p)
             upd["players"] = updated_players
     if data.status is not None:
@@ -394,7 +395,10 @@ async def join_session(sid: str, data: PlayerAction):
                     "players.$.state": data.state,
                     "players.$.nickname": data.nickname,
                     "updated_at": now,
-                }
+                },
+                "$unset": {
+                    "players.$.needs_reconfirm": "",
+                },
             },
         )
     else:
@@ -470,6 +474,7 @@ async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
     for p in s.get("players", []):
         if p["state"] == "in_lobby" and p["player_id"] != s["host_id"]:
             p["state"] = "joining"
+            p["needs_reconfirm"] = True
         updated_players.append(p)
 
     await db.sessions.update_one(
