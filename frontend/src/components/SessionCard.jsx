@@ -91,10 +91,10 @@ export const SessionCard = ({ session, featured }) => {
             <Clock className="w-3 h-3" />
             <span>{timeAgo(session.created_at)}</span>
           </div>
-          {session.updated_at !== session.created_at && (
+          {session.code_updated_at && (
             <div className="flex items-center gap-1">
               <RefreshCw className="w-3 h-3" />
-              <span>code updated {timeAgo(session.updated_at)}</span>
+              <span>code updated {timeAgo(session.code_updated_at)}</span>
             </div>
           )}
         </div>

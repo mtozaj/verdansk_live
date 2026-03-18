@@ -202,6 +202,7 @@ def clean(doc):
     )
     doc["lobby_expired_at"] = doc.get("lobby_expired_at")
     doc["lobby_expired"] = bool(doc.get("lobby_expired_at"))
+    doc["code_updated_at"] = doc.get("code_updated_at")
     doc["server_now"] = datetime.now(timezone.utc).isoformat()
     return doc
 
@@ -266,6 +267,7 @@ async def create_session(data: SessionCreate):
         ],
         "created_at": now,
         "updated_at": now,
+        "code_updated_at": None,
         "lobby_reset_at": now,
         "lobby_expired_at": None,
         "host_last_heartbeat": now,
@@ -324,6 +326,7 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
     code_changed = False
     if data.match_code is not None:
         upd["match_code"] = data.match_code
+        upd["code_updated_at"] = upd["updated_at"]
         code_changed = True
         if reset_timer:
             upd["lobby_reset_at"] = upd["updated_at"]
@@ -483,6 +486,7 @@ async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
             "$set": {
                 "players": updated_players,
                 "match_code": data.match_code,
+                "code_updated_at": now,
                 "lobby_reset_at": now,
                 "lobby_expired_at": None,
                 "updated_at": now,
