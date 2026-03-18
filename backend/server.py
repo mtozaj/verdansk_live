@@ -6,7 +6,7 @@ import os
 import logging
 import asyncio
 from pathlib import Path
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -25,7 +25,7 @@ api_router = APIRouter(prefix="/api")
 # ===== Models =====
 
 class SessionCreate(BaseModel):
-    host_name: str
+    host_name: str = Field(..., min_length=2)
     host_id: str
     title: str
     region: str = "NA"
@@ -56,13 +56,13 @@ class SessionUpdate(BaseModel):
 
 class PlayerAction(BaseModel):
     player_id: str
-    nickname: str
+    nickname: str = Field(..., min_length=2)
     state: str = "interested"
 
 
 class ChatMsg(BaseModel):
     player_id: str
-    nickname: str
+    nickname: str = Field(..., min_length=2)
     message: str
 
 

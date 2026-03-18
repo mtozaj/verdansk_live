@@ -5,7 +5,6 @@ import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
 import { FilterBar } from "@/components/FilterBar";
 import { SessionCard } from "@/components/SessionCard";
-import { NicknamePrompt } from "@/components/NicknamePrompt";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { Radio } from "lucide-react";
 
@@ -97,7 +96,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen" data-testid="home-page">
-      <NicknamePrompt />
       <Header stats={stats} />
       <HeroSection stats={stats} />
 

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import { PlayerProvider } from "@/hooks/usePlayer";
+import { NicknamePrompt } from "@/components/NicknamePrompt";
 import "@/App.css";
 import HomePage from "@/pages/HomePage";
 import SessionPage from "@/pages/SessionPage";
@@ -22,6 +23,7 @@ function App() {
             },
           }}
         />
+        <NicknamePrompt />
         <div className="min-h-screen">
           <Routes>
             <Route path="/" element={<HomePage />} />
