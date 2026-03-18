@@ -224,6 +224,7 @@ export default function SessionPage() {
   const [chatVisible, setChatVisible] = useState(false);
   const [editingCode, setEditingCode] = useState(false);
   const [editCode, setEditCode] = useState("");
+  const [pendingCodeConfirm, setPendingCodeConfirm] = useState(false);
   const codeChangedTimer = useRef(null);
   const expiryToastShownRef = useRef(false);
   const chatSectionRef = useRef(null);
@@ -295,6 +296,7 @@ export default function SessionPage() {
     if (data.type === "code_changed") {
       toast.info("Match code has been updated!");
       setCodeChanged(true);
+      setPendingCodeConfirm(true);
     }
     if (data.type === "lobby_reset") {
       toast.info("Lobby has been reset — check the new match code");
@@ -976,11 +978,11 @@ export default function SessionPage() {
                   </div>
                 ) : myPlayer?.state === "joining" ? (
                   <JoiningStatus
-                    onConfirm={() => updateState("in_lobby")}
+                    onConfirm={() => { updateState("in_lobby"); setPendingCodeConfirm(false); }}
                     onLeave={leaveSession}
                     isHost={isHost}
                     copied={copied}
-                    codeChanged={codeChanged}
+                    codeChanged={pendingCodeConfirm}
                     matchCode={session?.match_code}
                   />
                 ) : (
