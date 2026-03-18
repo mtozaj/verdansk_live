@@ -623,7 +623,7 @@ export default function SessionPage() {
                       value={newCode}
                       onChange={(e) => setNewCode(e.target.value)}
                       placeholder="New lobby? Update and reset with new code."
-                      className="bg-secondary/50 border-white/10 font-mono text-sm"
+                      className="bg-secondary/50 border-white/10 font-mono text-sm placeholder:text-[10px] sm:placeholder:text-sm"
                       disabled={session.lobby_expired}
                       data-testid="update-code-input"
                     />
