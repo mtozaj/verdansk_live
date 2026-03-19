@@ -485,6 +485,47 @@ async def leave_session(sid: str, player_id: str = Query(...)):
     return result
 
 
+@api_router.post("/sessions/{sid}/exit-lobby")
+async def exit_lobby(sid: str, data: PlayerAction):
+    session = await db.sessions.find_one({"id": sid})
+    if not session:
+        raise HTTPException(404, "Session not found")
+
+    session = await reconcile_lobby_expiry(session, broadcast=True)
+    player = next(
+        (p for p in session.get("players", []) if p.get("player_id") == data.player_id),
+        None,
+    )
+    if not player:
+        raise HTTPException(404, "Player not found in session")
+    if player.get("player_id") == session.get("host_id"):
+        raise HTTPException(403, "Host cannot exit lobby")
+    if player.get("state") not in ("joining", "in_lobby"):
+        raise HTTPException(400, "Only joining or in-lobby players can exit back to interested")
+
+    now = datetime.now(timezone.utc).isoformat()
+    await db.sessions.update_one(
+        {"id": sid, "players.player_id": data.player_id},
+        {
+            "$set": {
+                "players.$.state": "interested",
+                "players.$.nickname": data.nickname,
+                "updated_at": now,
+            },
+            "$unset": {
+                "players.$.needs_reconfirm": "",
+            },
+        },
+    )
+
+    await auto_update_status(sid)
+    updated = await db.sessions.find_one({"id": sid}, {"_id": 0})
+    result = clean(updated)
+    await mgr.broadcast(f"session:{sid}", {"type": "session_updated", "session": result})
+    await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
+    return result
+
+
 
 class ResetLobby(BaseModel):
     match_code: str

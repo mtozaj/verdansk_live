@@ -164,7 +164,7 @@ function JoiningStatus({ onConfirm, onLeave, isHost, copied, codeChanged, matchC
             className="text-destructive hover:text-destructive text-xs"
             data-testid="leave-session-btn"
           >
-            Back to Lobby
+            Exit Lobby
           </Button>
         )}
       </div>
@@ -219,7 +219,7 @@ function JoiningStatus({ onConfirm, onLeave, isHost, copied, codeChanged, matchC
           className="text-destructive hover:text-destructive text-xs"
           data-testid="leave-session-btn"
         >
-          Back to Lobby
+          Exit Lobby
         </Button>
       )}
     </div>
@@ -511,6 +511,20 @@ export default function SessionPage() {
     }
     navigate("/");
   }, [leaveSession, myPlayer?.state, navigate]);
+
+  const exitLobby = useCallback(async () => {
+    try {
+      const res = await axios.post(`${API}/sessions/${id}/exit-lobby`, {
+        player_id: playerId,
+        nickname,
+      });
+      setSession(res.data);
+      setPendingCodeConfirm(false);
+      setCodeChanged(false);
+    } catch {
+      toast.error("Failed to exit lobby");
+    }
+  }, [id, nickname, playerId]);
 
   const updateState = async (state) => {
     try {
@@ -1012,17 +1026,6 @@ export default function SessionPage() {
                           : "Your status has been reset to interested on the server."}
                       </p>
                     </div>
-                    {!isHost && hasJoined && (
-                      <Button
-                        onClick={backToLobby}
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive text-xs"
-                        data-testid="leave-session-btn"
-                      >
-                        Back to Lobby
-                      </Button>
-                    )}
                   </div>
                 ) : !hasJoined ? (
                   session.status === "in_progress" ? (
@@ -1078,22 +1081,11 @@ export default function SessionPage() {
                     <p className="text-xs text-muted-foreground font-mono">
                       This will reveal the private match code to you.
                     </p>
-                    {!isHost && (
-                      <Button
-                        onClick={backToLobby}
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive text-xs"
-                        data-testid="leave-session-btn"
-                      >
-                        Back to Lobby
-                      </Button>
-                    )}
                   </div>
                 ) : myPlayer?.state === "joining" ? (
                   <JoiningStatus
                     onConfirm={() => { updateState("in_lobby"); setPendingCodeConfirm(false); }}
-                    onLeave={backToLobby}
+                    onLeave={exitLobby}
                     isHost={isHost}
                     copied={copied}
                     codeChanged={pendingCodeConfirm || myPlayer?.needs_reconfirm}
@@ -1112,13 +1104,13 @@ export default function SessionPage() {
                     </p>
                     {!isHost && (
                       <Button
-                        onClick={backToLobby}
+                        onClick={exitLobby}
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive text-xs"
                         data-testid="leave-session-btn"
                       >
-                        Back to Lobby
+                        Exit Lobby
                       </Button>
                     )}
                   </div>
