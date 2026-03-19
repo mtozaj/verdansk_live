@@ -982,7 +982,7 @@ export default function SessionPage() {
                 <h3 className="font-heading text-sm uppercase tracking-wider text-muted-foreground">
                   Session Progress
                 </h3>
-                <span className="font-mono text-sm">
+                <span className="font-mono text-xs">
                   <span className="text-foreground font-bold">
                     {session.in_lobby_count}
                   </span>
