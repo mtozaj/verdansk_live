@@ -25,7 +25,7 @@ export const HeroSection = ({ stats }) => {
           </h1>
 
           <p className="text-base md:text-lg text-primary font-heading uppercase tracking-wide mb-8">
-            Defeat is only a mindset. Shake it off and keep pushing
+            Defeat is only a mindset. Shake it off and keep pushing.
           </p>
 
           <div className="flex flex-wrap gap-6">
