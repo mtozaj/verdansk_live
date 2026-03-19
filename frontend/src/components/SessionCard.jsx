@@ -117,7 +117,7 @@ export const SessionCard = ({ session, featured }) => {
               </span>
             </div>
             <span className="font-mono text-xs text-muted-foreground">
-              {session.interested_count} interested
+              {session.in_lobby_count}/{session.max_players} capacity
             </span>
           </div>
           <Progress
@@ -126,10 +126,8 @@ export const SessionCard = ({ session, featured }) => {
             data-testid={`session-progress-${session.id}`}
           />
           <div className="flex justify-between items-center mt-1.5 text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+            <span>{session.interested_count} interested</span>
             <span>{session.joining_count} joining soon</span>
-            <span>
-              {session.in_lobby_count}/{session.max_players} capacity
-            </span>
           </div>
         </div>
 
