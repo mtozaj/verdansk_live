@@ -582,7 +582,6 @@ export default function SessionPage() {
                   <Clock className="w-3 h-3" />
                   {timeAgo(session.created_at)}
                 </div>
-                <span>{session.platform}</span>
               </div>
             </div>
 

@@ -131,10 +131,7 @@ export const SessionCard = ({ session, featured }) => {
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground font-mono">
-            {session.platform}
-          </span>
+        <div className="flex items-center justify-end">
           <div className="flex items-center gap-2">
             {session.host_inactive && (
               <div className="flex items-center gap-1 text-yellow-500 text-xs font-mono" data-testid={`host-inactive-${session.id}`}>
