@@ -164,7 +164,7 @@ function JoiningStatus({ onConfirm, onLeave, isHost, copied, codeChanged, matchC
             className="text-destructive hover:text-destructive text-xs"
             data-testid="leave-session-btn"
           >
-            Leave Session
+            Back to Lobby
           </Button>
         )}
       </div>
@@ -219,7 +219,7 @@ function JoiningStatus({ onConfirm, onLeave, isHost, copied, codeChanged, matchC
           className="text-destructive hover:text-destructive text-xs"
           data-testid="leave-session-btn"
         >
-          Leave Session
+          Back to Lobby
         </Button>
       )}
     </div>
@@ -248,10 +248,52 @@ export default function SessionPage() {
   const expiryToastShownRef = useRef(false);
   const chatSectionRef = useRef(null);
   const autoInterestAttemptRef = useRef("");
+  const interestedExitHandledRef = useRef(false);
+  const interestedUnmountStateRef = useRef({
+    id,
+    playerId,
+    isHost: false,
+    state: null,
+  });
 
   const isHost = session?.host_id === playerId;
   const myPlayer = session?.players?.find((p) => p.player_id === playerId);
   const hasJoined = !!myPlayer;
+
+  useEffect(() => {
+    interestedUnmountStateRef.current = {
+      id,
+      playerId,
+      isHost,
+      state: myPlayer?.state ?? null,
+    };
+  }, [id, isHost, myPlayer?.state, playerId]);
+
+  useEffect(() => {
+    interestedExitHandledRef.current = false;
+  }, [id, playerId]);
+
+  useEffect(() => {
+    return () => {
+      if (interestedExitHandledRef.current) return;
+
+      const { id: sessionId, playerId: activePlayerId, isHost: activeIsHost, state } = interestedUnmountStateRef.current;
+      if (!sessionId || !activePlayerId || activeIsHost || state !== "interested") {
+        return;
+      }
+
+      const leaveUrl = `${API}/sessions/${sessionId}/leave?player_id=${activePlayerId}`;
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(leaveUrl, new Blob([], { type: "text/plain" }));
+        return;
+      }
+
+      fetch(leaveUrl, {
+        method: "POST",
+        keepalive: true,
+      }).catch(() => {});
+    };
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -447,16 +489,28 @@ export default function SessionPage() {
     });
   }, [hasNickname, id, joinSession, loading, nickname, playerId, session]);
 
-  const leaveSession = async () => {
+  const leaveSession = useCallback(async ({ silent = false } = {}) => {
     try {
       const res = await axios.post(
         `${API}/sessions/${id}/leave?player_id=${playerId}`
       );
       setSession(res.data);
+      return res.data;
     } catch {
-      // silent
+      if (!silent) {
+        toast.error("Failed to leave session");
+      }
+      return null;
     }
-  };
+  }, [id, playerId]);
+
+  const backToLobby = useCallback(async () => {
+    if (myPlayer?.state === "interested") {
+      interestedExitHandledRef.current = true;
+      await leaveSession({ silent: true });
+    }
+    navigate("/");
+  }, [leaveSession, myPlayer?.state, navigate]);
 
   const updateState = async (state) => {
     try {
@@ -549,11 +603,11 @@ export default function SessionPage() {
 
   return (
     <div className="min-h-screen" data-testid="session-page">
-      <Header />
+      <Header onHomeClick={backToLobby} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <button
-          onClick={() => navigate("/")}
+          onClick={backToLobby}
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors duration-200"
           data-testid="back-btn"
         >
@@ -960,13 +1014,13 @@ export default function SessionPage() {
                     </div>
                     {!isHost && hasJoined && (
                       <Button
-                        onClick={leaveSession}
+                        onClick={backToLobby}
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive text-xs"
                         data-testid="leave-session-btn"
                       >
-                        Leave Session
+                        Back to Lobby
                       </Button>
                     )}
                   </div>
@@ -1026,20 +1080,20 @@ export default function SessionPage() {
                     </p>
                     {!isHost && (
                       <Button
-                        onClick={leaveSession}
+                        onClick={backToLobby}
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive text-xs"
                         data-testid="leave-session-btn"
                       >
-                        Leave Session
+                        Back to Lobby
                       </Button>
                     )}
                   </div>
                 ) : myPlayer?.state === "joining" ? (
                   <JoiningStatus
                     onConfirm={() => { updateState("in_lobby"); setPendingCodeConfirm(false); }}
-                    onLeave={leaveSession}
+                    onLeave={backToLobby}
                     isHost={isHost}
                     copied={copied}
                     codeChanged={pendingCodeConfirm || myPlayer?.needs_reconfirm}
@@ -1058,13 +1112,13 @@ export default function SessionPage() {
                     </p>
                     {!isHost && (
                       <Button
-                        onClick={leaveSession}
+                        onClick={backToLobby}
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive text-xs"
                         data-testid="leave-session-btn"
                       >
-                        Leave Session
+                        Back to Lobby
                       </Button>
                     )}
                   </div>

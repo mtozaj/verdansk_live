@@ -72,15 +72,41 @@ class WSManager:
     def __init__(self):
         self.rooms: Dict[str, List[WebSocket]] = {}
         self.presence: Dict[str, float] = {}  # player_id -> last_seen timestamp
+        self.session_presence: Dict[str, Dict[str, float]] = {}
         self.presence_ttl = 30  # seconds before considered offline
 
     async def connect(self, room: str, ws: WebSocket):
         await ws.accept()
         self.rooms.setdefault(room, []).append(ws)
 
-    def heartbeat(self, player_id: str):
+    def heartbeat(self, player_id: str, session_id: Optional[str] = None):
         import time
-        self.presence[player_id] = time.time()
+        now = time.time()
+        self.presence[player_id] = now
+        if session_id:
+            self.session_presence.setdefault(session_id, {})[player_id] = now
+
+    def clear_session_presence(self, session_id: str, player_id: str):
+        if session_id not in self.session_presence:
+            return
+        self.session_presence[session_id].pop(player_id, None)
+        if not self.session_presence[session_id]:
+            del self.session_presence[session_id]
+
+    def stale_session_players(self, ttl_seconds: int) -> List[tuple[str, str]]:
+        import time
+        now = time.time()
+        stale: List[tuple[str, str]] = []
+
+        for session_id, players in list(self.session_presence.items()):
+            stale_players = [player_id for player_id, ts in players.items() if now - ts > ttl_seconds]
+            for player_id in stale_players:
+                stale.append((session_id, player_id))
+                del players[player_id]
+            if not players:
+                del self.session_presence[session_id]
+
+        return stale
 
     def disconnect(self, room: str, ws: WebSocket):
         if room in self.rooms:
@@ -448,6 +474,7 @@ async def leave_session(sid: str, player_id: str = Query(...)):
             "$set": {"updated_at": now},
         },
     )
+    mgr.clear_session_presence(sid, player_id)
     await auto_update_status(sid)
     updated = await db.sessions.find_one({"id": sid}, {"_id": 0})
     if not updated:
@@ -614,7 +641,7 @@ async def ws_session(ws: WebSocket, sid: str):
                                 await mgr.broadcast(room, {"type": "session_updated", "session": result})
                                 await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
                     elif msg.get("type") == "presence" and msg.get("player_id"):
-                        mgr.heartbeat(msg["player_id"])
+                        mgr.heartbeat(msg["player_id"], sid)
                 except Exception:
                     pass
     except (WebSocketDisconnect, Exception):
@@ -645,6 +672,32 @@ async def staleness_cleanup():
         try:
             now = datetime.now(timezone.utc)
             cutoff = (now - timedelta(minutes=30)).isoformat()
+            interested_cutoff_seconds = 300
+
+            for sid, player_id in mgr.stale_session_players(interested_cutoff_seconds):
+                removal = await db.sessions.update_one(
+                    {
+                        "id": sid,
+                        "players": {
+                            "$elemMatch": {
+                                "player_id": player_id,
+                                "state": "interested",
+                            }
+                        },
+                    },
+                    {
+                        "$pull": {"players": {"player_id": player_id, "state": "interested"}},
+                        "$set": {"updated_at": now.isoformat()},
+                    },
+                )
+
+                if removal.modified_count:
+                    updated = await db.sessions.find_one({"id": sid}, {"_id": 0})
+                    if updated:
+                        result = clean(updated)
+                        await mgr.broadcast(f"session:{sid}", {"type": "session_updated", "session": result})
+                        await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
+                        logger.info(f"Removed inactive interested player {player_id} from session {sid}")
 
             expired_lobbies = await db.sessions.find(
                 {

@@ -6,7 +6,7 @@ import { usePlayer } from "@/hooks/usePlayer";
 import { CreateSessionDialog } from "@/components/CreateSessionDialog";
 import { HelpDialog } from "@/components/HelpDialog";
 
-export const Header = ({ stats }) => {
+export const Header = ({ stats, onHomeClick }) => {
   const { nickname } = usePlayer();
   const [createOpen, setCreateOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -22,6 +22,11 @@ export const Header = ({ stats }) => {
             to="/"
             className="flex items-center gap-2 group"
             data-testid="logo-link"
+            onClick={(e) => {
+              if (!onHomeClick) return;
+              e.preventDefault();
+              onHomeClick();
+            }}
           >
             <Crosshair className="w-5 h-5 text-primary" />
             <span className="font-heading font-bold text-lg uppercase tracking-wider text-foreground">
