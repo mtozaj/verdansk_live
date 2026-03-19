@@ -229,7 +229,7 @@ function JoiningStatus({ onConfirm, onLeave, isHost, copied, codeChanged, matchC
 export default function SessionPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { playerId, nickname } = usePlayer();
+  const { playerId, nickname, hasNickname } = usePlayer();
 
   const [session, setSession] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -243,9 +243,11 @@ export default function SessionPage() {
   const [editingCode, setEditingCode] = useState(false);
   const [editCode, setEditCode] = useState("");
   const [pendingCodeConfirm, setPendingCodeConfirm] = useState(false);
+  const [autoInterestPending, setAutoInterestPending] = useState(false);
   const codeChangedTimer = useRef(null);
   const expiryToastShownRef = useRef(false);
   const chatSectionRef = useRef(null);
+  const autoInterestAttemptRef = useRef("");
 
   const isHost = session?.host_id === playerId;
   const myPlayer = session?.players?.find((p) => p.player_id === playerId);
@@ -410,7 +412,7 @@ export default function SessionPage() {
     }
   };
 
-  const joinSession = async (state = "interested") => {
+  const joinSession = useCallback(async (state = "interested", { silent = false } = {}) => {
     try {
       const res = await axios.post(`${API}/sessions/${id}/join`, {
         player_id: playerId,
@@ -418,10 +420,32 @@ export default function SessionPage() {
         state,
       });
       setSession(res.data);
+      return res.data;
     } catch {
-      toast.error("Failed to join");
+      if (!silent) {
+        toast.error("Failed to join");
+      }
+      return null;
     }
-  };
+  }, [id, nickname, playerId]);
+
+  useEffect(() => {
+    if (!session || loading) return;
+    if (!hasNickname || !playerId || !nickname) return;
+    if (session.host_id === playerId) return;
+    if (["in_progress", "ended"].includes(session.status)) return;
+    if (session.players?.some((p) => p.player_id === playerId)) return;
+
+    const attemptKey = `${id}:${playerId}`;
+    if (autoInterestAttemptRef.current === attemptKey) return;
+
+    autoInterestAttemptRef.current = attemptKey;
+    setAutoInterestPending(true);
+
+    joinSession("interested", { silent: true }).finally(() => {
+      setAutoInterestPending(false);
+    });
+  }, [hasNickname, id, joinSession, loading, nickname, playerId, session]);
 
   const leaveSession = async () => {
     try {
@@ -962,21 +986,22 @@ export default function SessionPage() {
                         className="uppercase tracking-widest font-bold text-xs opacity-40 cursor-not-allowed"
                         data-testid="join-session-btn-disabled"
                       >
-                        I'm Interested
+                        Commit to Joining
                       </Button>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <Button
-                        onClick={() => joinSession("interested")}
-                        className="uppercase tracking-widest font-bold text-xs active:scale-95 glow-primary"
+                        onClick={() => joinSession("joining")}
+                        className="uppercase tracking-widest font-bold text-xs active:scale-95 bg-blue-600 hover:bg-blue-700 text-white"
                         data-testid="join-session-btn"
+                        disabled={autoInterestPending}
                       >
-                        I'm Interested
+                        <Lock className="w-3 h-3 mr-1.5" />
+                        {autoInterestPending ? "Syncing Interest..." : "Commit to Joining — Unlock Code"}
                       </Button>
                       <p className="text-xs text-muted-foreground font-mono">
-                        Join to follow this session. Commit to joining to unlock
-                        the match code.
+                        Opening this session counts you as interested. Commit to joining to unlock the match code.
                       </p>
                     </div>
                   )
