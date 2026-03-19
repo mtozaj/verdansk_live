@@ -70,18 +70,19 @@ export default function HomePage() {
           }
         }
       } else if (data.type === "session_updated") {
-        setSessions((prev) =>
-          prev
+        setSessions((prev) => {
+          const previousSession = prev.find((s) => s.id === data.session.id);
+          if (
+            previousSession?.status !== "almost_full" &&
+            data.session.status === "almost_full"
+          ) {
+            toast(`${data.session.title} is nearing lobby capacity.`);
+          }
+
+          return prev
             .map((s) => (s.id === data.session.id ? data.session : s))
-            .filter((s) => s.status !== "ended")
-        );
-        if (
-          data.session.ready_count >=
-          data.session.min_players * 0.8 &&
-          data.session.status === "filling"
-        ) {
-          toast(`${data.session.title} is almost full!`);
-        }
+            .filter((s) => s.status !== "ended");
+        });
       }
       fetchStats();
     },

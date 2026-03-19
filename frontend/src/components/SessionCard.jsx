@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { MapPin, Users, Clock, Shield, ChevronRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { getSessionDisplayState, getSessionStartProgress } from "@/lib/sessionMetrics";
 
 function timeAgo(dateStr) {
   const seconds = Math.floor(
@@ -17,31 +18,32 @@ function timeAgo(dateStr) {
 
 const STATUS_STYLES = {
   filling: { label: "Filling", cls: "bg-primary/20 text-primary border-primary/30" },
+  ready_to_start: { label: "Ready to Start", cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
   almost_full: { label: "Almost Full", cls: "bg-primary/20 text-primary border-primary/30" },
+  full: { label: "Full", cls: "bg-red-500/20 text-red-400 border-red-500/30" },
   starting: { label: "Match Starting Soon", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
   in_progress: { label: "Match Started", cls: "bg-green-500/20 text-green-400 border-green-500/30" },
   ended: { label: "Ended", cls: "bg-muted text-muted-foreground border-muted" },
+  expired: { label: "Expired", cls: "bg-red-500/20 text-red-400 border-red-500/30" },
 };
 
 const ACCENT_COLORS = {
   filling: "bg-primary",
+  ready_to_start: "bg-emerald-500",
   almost_full: "bg-primary",
+  full: "bg-red-500",
   starting: "bg-blue-500",
   in_progress: "bg-green-500",
   ended: "bg-muted-foreground",
+  expired: "bg-red-500",
 };
 
 export const SessionCard = ({ session, featured }) => {
   const navigate = useNavigate();
-  const isExpired = session.lobby_expired && ["filling", "almost_full", "starting"].includes(session.status);
-  const status = isExpired
-    ? { label: "Expired", cls: "bg-red-500/20 text-red-400 border-red-500/30" }
-    : STATUS_STYLES[session.status] || STATUS_STYLES.filling;
-  const accentColor = isExpired ? "bg-red-500" : ACCENT_COLORS[session.status] || "bg-primary";
-  const progress = Math.min(
-    (session.ready_count / session.min_players) * 100,
-    100
-  );
+  const displayState = getSessionDisplayState(session);
+  const status = STATUS_STYLES[displayState] || STATUS_STYLES.filling;
+  const accentColor = ACCENT_COLORS[displayState] || "bg-primary";
+  const progress = getSessionStartProgress(session);
 
   return (
     <div
@@ -57,7 +59,7 @@ export const SessionCard = ({ session, featured }) => {
       <div className="p-4 md:p-5">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
-            {session.status !== "ended" && !isExpired && <div className="live-dot" />}
+            {!["ended", "expired"].includes(displayState) && <div className="live-dot" />}
             <span className="font-heading font-bold text-sm uppercase tracking-wide text-primary/80">
               Verdansk
             </span>
@@ -109,13 +111,13 @@ export const SessionCard = ({ session, featured }) => {
               <Users className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="font-mono text-xs text-muted-foreground">
                 <span className="text-foreground font-bold">
-                  {session.ready_count}
+                  {session.in_lobby_count}
                 </span>
-                /{session.min_players} ready
+                /{session.min_players} in lobby
               </span>
             </div>
             <span className="font-mono text-xs text-muted-foreground">
-              {session.player_count} joined
+              {session.interested_count} interested
             </span>
           </div>
           <Progress
@@ -123,6 +125,12 @@ export const SessionCard = ({ session, featured }) => {
             className="h-1.5"
             data-testid={`session-progress-${session.id}`}
           />
+          <div className="flex justify-between items-center mt-1.5 text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+            <span>{session.joining_count} joining soon</span>
+            <span>
+              {session.in_lobby_count}/{session.max_players} capacity
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center justify-between">

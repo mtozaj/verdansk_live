@@ -32,6 +32,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { ChatFeed } from "@/components/ChatFeed";
 import { Header } from "@/components/Header";
 import { LobbyTimer } from "@/components/LobbyTimer";
+import { getSessionDisplayState, getSessionStartProgress } from "@/lib/sessionMetrics";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -48,10 +49,20 @@ function timeAgo(dateStr) {
 
 const STATUS_MAP = {
   filling: { label: "Filling", color: "text-primary", bg: "bg-primary/20" },
+  ready_to_start: {
+    label: "Ready to Start",
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/20",
+  },
   almost_full: {
     label: "Almost Full",
     color: "text-primary",
     bg: "bg-primary/20",
+  },
+  full: {
+    label: "Full",
+    color: "text-red-400",
+    bg: "bg-red-500/20",
   },
   starting: {
     label: "Match Starting Soon",
@@ -67,6 +78,11 @@ const STATUS_MAP = {
     label: "Ended",
     color: "text-muted-foreground",
     bg: "bg-muted",
+  },
+  expired: {
+    label: "Expired",
+    color: "text-red-400",
+    bg: "bg-red-500/20",
   },
 };
 
@@ -498,11 +514,9 @@ export default function SessionPage() {
 
   if (!session) return null;
 
-  const status = STATUS_MAP[session.status] || STATUS_MAP.filling;
-  const progress = Math.min(
-    (session.ready_count / session.min_players) * 100,
-    100
-  );
+  const displayState = getSessionDisplayState(session);
+  const status = STATUS_MAP[displayState] || STATUS_MAP.filling;
+  const progress = getSessionStartProgress(session);
   const codeUnlocked =
     isHost ||
     myPlayer?.state === "joining" ||
@@ -879,10 +893,10 @@ export default function SessionPage() {
                 </h3>
                 <span className="font-mono text-sm">
                   <span className="text-foreground font-bold">
-                    {session.ready_count}
+                    {session.in_lobby_count}
                   </span>
                   <span className="text-muted-foreground">
-                    /{session.min_players} ready
+                    /{session.min_players} in lobby
                   </span>
                 </span>
               </div>
@@ -891,9 +905,10 @@ export default function SessionPage() {
                 className="h-2.5 mb-2"
                 data-testid="session-progress-bar"
               />
-              <div className="flex justify-between text-xs font-mono text-muted-foreground">
-                <span>{session.player_count} total joined</span>
-                <span>{session.in_lobby_count} in lobby</span>
+              <div className="grid grid-cols-3 gap-3 text-xs font-mono text-muted-foreground">
+                <span>{session.interested_count} interested</span>
+                <span className="text-center">{session.joining_count} joining soon</span>
+                <span className="text-right">{session.in_lobby_count}/{session.max_players} capacity</span>
               </div>
             </div>
 

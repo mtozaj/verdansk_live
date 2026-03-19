@@ -56,11 +56,8 @@ export const CreateSessionDialog = ({ open, onOpenChange }) => {
       setForm({
         title: "",
         match_code: "",
-        map_name: "Verdansk",
         region: "North America",
-        game_mode: "Battle Royale",
         platform: "Cross-play",
-        min_players: 24,
       });
     } catch {
       toast.error("Failed to create session");
@@ -88,7 +85,7 @@ export const CreateSessionDialog = ({ open, onOpenChange }) => {
             <Input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder='e.g. "Verdansk BR - Need 24 players"'
+              placeholder='e.g. "Verdansk BR - Need 50 in lobby"'
               className="bg-secondary/50 border-white/10 font-mono text-sm"
               data-testid="create-title-input"
             />

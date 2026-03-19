@@ -101,8 +101,14 @@ class RallyPointAPITester:
                 print("   ✅ Game mode correctly hardcoded to Battle Royale")
             if response.get('min_players') == 50:
                 print("   ✅ Min players correctly hardcoded to 50")
-            if response.get('max_players') == 150:
-                print("   ✅ Max players correctly hardcoded to 150")
+            if response.get('max_players') == 152:
+                print("   ✅ Max players correctly hardcoded to 152")
+            if response.get('interested_count') == 0:
+                print("   ✅ Interested count starts at 0")
+            if response.get('joining_count') == 0:
+                print("   ✅ Joining count starts at 0")
+            if response.get('in_lobby_count') == 1:
+                print("   ✅ In-lobby count starts with the host")
         
         return success
 
@@ -187,6 +193,9 @@ class RallyPointAPITester:
         
         if success and isinstance(response, dict):
             print(f"   Players in session: {response.get('player_count', 0)}")
+            print(f"   Interested: {response.get('interested_count', 0)}")
+            print(f"   Joining soon: {response.get('joining_count', 0)}")
+            print(f"   In lobby: {response.get('in_lobby_count', 0)}")
             
         return success
 

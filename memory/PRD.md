@@ -11,7 +11,7 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 
 ## Core Requirements (Static)
 - Verdansk ONLY - no other maps
-- Min players: 50 (hardcoded), Max: 150
+- Min players: 50 (hardcoded), Max: 152
 - Strict one-way status transitions: filling → starting → in_progress → ended
 - Strict one-way player states: interested → joining → in_lobby
 - Match code LOCKED until player commits to joining
@@ -26,7 +26,7 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 
 ### Phase 2 (2026-03-16) - Hardening
 - [x] Verdansk-only (removed map selection)
-- [x] 50 min players, 150 max (hardcoded)
+- [x] 50 min players, 152 max (hardcoded)
 - [x] Strict one-way status transitions (backend enforced)
 - [x] Strict one-way player state transitions (backend enforced)
 - [x] Match code locking (only visible to joining/in_lobby players)

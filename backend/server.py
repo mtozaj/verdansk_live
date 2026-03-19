@@ -192,6 +192,8 @@ def clean(doc):
     doc.pop("_id", None)
     ps = doc.get("players", [])
     doc["player_count"] = len(ps)
+    doc["interested_count"] = sum(1 for p in ps if p.get("state") == "interested")
+    doc["joining_count"] = sum(1 for p in ps if p.get("state") == "joining")
     doc["ready_count"] = sum(1 for p in ps if p.get("state") in ("joining", "in_lobby"))
     doc["in_lobby_count"] = sum(1 for p in ps if p.get("state") == "in_lobby")
     doc["host_inactive"] = doc.get("host_inactive", False)
@@ -208,19 +210,19 @@ def clean(doc):
 
 
 async def auto_update_status(sid: str):
-    """Auto-transition between filling <-> almost_full based on ready player count."""
+    """Auto-transition between filling <-> almost_full based on in-lobby capacity."""
     s = await db.sessions.find_one({"id": sid})
     if not s or s["status"] not in ("filling", "almost_full"):
         return
     ps = s.get("players", [])
-    ready = sum(1 for p in ps if p.get("state") in ("joining", "in_lobby"))
-    min_players = s.get("min_players", 50)
-    threshold = min_players * 0.8  # 80% of min = 40 players
+    in_lobby = sum(1 for p in ps if p.get("state") == "in_lobby")
+    max_players = s.get("max_players", 152)
+    threshold = max_players * 0.8
 
     new_status = None
-    if s["status"] == "filling" and ready >= threshold:
+    if s["status"] == "filling" and in_lobby >= threshold:
         new_status = "almost_full"
-    elif s["status"] == "almost_full" and ready < threshold:
+    elif s["status"] == "almost_full" and in_lobby < threshold:
         new_status = "filling"
 
     if new_status:
@@ -255,7 +257,7 @@ async def create_session(data: SessionCreate):
         "match_code": data.match_code,
         "status": "filling",
         "min_players": 50,
-        "max_players": 150,
+        "max_players": 152,
         "platform": data.platform,
         "players": [
             {
@@ -405,6 +407,8 @@ async def join_session(sid: str, data: PlayerAction):
             },
         )
     else:
+        if len(s.get("players", [])) >= s.get("max_players", 152):
+            raise HTTPException(400, "Session is full")
         if data.state not in ("interested", "joining"):
             data.state = "interested"
         await db.sessions.update_one(
