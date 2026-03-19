@@ -104,13 +104,64 @@ export const ChatFeed = ({
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const mentionListRef = useRef(null);
+  const focusScrollTimersRef = useRef([]);
 
-  useEffect(() => {
+  const clearFocusScrollTimers = useCallback(() => {
+    focusScrollTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+    focusScrollTimersRef.current = [];
+  }, []);
+
+  const scrollChatIntoView = useCallback(() => {
     const viewport = bottomRef.current?.closest('[data-radix-scroll-area-viewport]');
     if (viewport) {
       viewport.scrollTop = viewport.scrollHeight;
     }
-  }, [messages]);
+
+    const chatSection = inputRef.current?.closest('[data-testid="chat-section"]');
+    if (chatSection) {
+      chatSection.scrollIntoView({ block: "end", behavior: "auto" });
+    }
+
+    inputRef.current?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
+  }, []);
+
+  const scheduleFocusScroll = useCallback(() => {
+    clearFocusScrollTimers();
+    scrollChatIntoView();
+
+    [60, 180, 320, 500].forEach((delay) => {
+      const timerId = setTimeout(() => {
+        scrollChatIntoView();
+      }, delay);
+      focusScrollTimersRef.current.push(timerId);
+    });
+  }, [clearFocusScrollTimers, scrollChatIntoView]);
+
+  useEffect(() => {
+    scrollChatIntoView();
+  }, [messages, scrollChatIntoView]);
+
+  useEffect(() => {
+    const viewportApi = window.visualViewport;
+    if (!viewportApi) {
+      return undefined;
+    }
+
+    const handleViewportChange = () => {
+      if (document.activeElement === inputRef.current) {
+        scheduleFocusScroll();
+      }
+    };
+
+    viewportApi.addEventListener("resize", handleViewportChange);
+    viewportApi.addEventListener("scroll", handleViewportChange);
+
+    return () => {
+      viewportApi.removeEventListener("resize", handleViewportChange);
+      viewportApi.removeEventListener("scroll", handleViewportChange);
+      clearFocusScrollTimers();
+    };
+  }, [clearFocusScrollTimers, scheduleFocusScroll]);
 
   // Filter players based on mention query
   const filteredPlayers = useMemo(() => {
@@ -348,6 +399,9 @@ export const ChatFeed = ({
             value={text}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
+            onFocus={scheduleFocusScroll}
+            onClick={scheduleFocusScroll}
+            onBlur={clearFocusScrollTimers}
             placeholder="Type @ to mention..."
             className="bg-secondary/50 border-white/10 font-mono text-xs h-8 placeholder:text-muted-foreground/50"
             data-testid="chat-input"
