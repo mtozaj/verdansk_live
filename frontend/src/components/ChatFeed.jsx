@@ -247,6 +247,7 @@ export const ChatFeed = ({
       setShowMentions(false);
       setMentionFilter("");
       setMentionStartPos(-1);
+      inputRef.current?.focus();
     }
   };
 
@@ -383,6 +384,7 @@ export const ChatFeed = ({
             className="h-8 w-8 shrink-0"
             disabled={!text.trim()}
             data-testid="chat-send-btn"
+            onMouseDown={(e) => e.preventDefault()}
           >
             <Send className="w-3.5 h-3.5" />
           </Button>
