@@ -113,6 +113,15 @@ export const ChatFeed = ({
     }, 350);
   }, []);
 
+  const handleInputBlur = useCallback(() => {
+    clearTimeout(focusScrollRef.current);
+    // Safari iOS doesn't reset scroll position after keyboard dismissal.
+    // Nudge it back by re-setting scrollTo the current position.
+    setTimeout(() => {
+      window.scrollTo(0, window.scrollY);
+    }, 100);
+  }, []);
+
   useEffect(() => {
     const viewport = bottomRef.current?.closest(
       "[data-radix-scroll-area-viewport]"
@@ -363,6 +372,7 @@ export const ChatFeed = ({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
             placeholder="Type @ to mention..."
             className="bg-secondary/50 border-white/10 font-mono text-xs h-8 placeholder:text-muted-foreground/50"
             data-testid="chat-input"
