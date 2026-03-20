@@ -825,7 +825,7 @@ async def share_session_og(sid: str):
     status_label = status_labels.get(status, "Active")
 
     og_title = f'Join: "{title}" — {in_lobby}/{min_p} in lobby'
-    og_desc = f"{in_lobby}/{min_p} in lobby · {region} · Hosted by {host} · {status_label} · {interested} interested, {joining} joining"
+    og_desc = f"{in_lobby}/{min_p} in lobby · {region} · Hosted by {host}"
     base_url = os.environ.get("BASE_URL", os.environ.get("FRONTEND_URL", ""))
     if not base_url:
         # Derive from CORS or known preview URL patterns
