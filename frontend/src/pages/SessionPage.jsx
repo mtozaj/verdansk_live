@@ -253,51 +253,38 @@ export default function SessionPage() {
   const autoInterestAttemptRef = useRef("");
   const leavingRef = useRef(false);
   const pendingExitRef = useRef(false);
-  const interestedExitHandledRef = useRef(false);
-  const interestedUnmountStateRef = useRef({
-    id,
-    playerId,
-    isHost: false,
-    state: null,
-  });
+  const cleanupHandledRef = useRef(false);
+  const cleanupStateRef = useRef({ id, playerId, isHost: false });
 
   const isHost = session?.host_id === playerId;
   const myPlayer = session?.players?.find((p) => p.player_id === playerId);
   const hasJoined = !!myPlayer;
 
   useEffect(() => {
-    interestedUnmountStateRef.current = {
-      id,
-      playerId,
-      isHost,
-      state: myPlayer?.state ?? null,
-    };
-  }, [id, isHost, myPlayer?.state, playerId]);
+    cleanupStateRef.current = { id, playerId, isHost };
+  }, [id, playerId, isHost]);
 
   useEffect(() => {
-    interestedExitHandledRef.current = false;
+    cleanupHandledRef.current = false;
+    pendingExitRef.current = false;
+    leavingRef.current = false;
   }, [id, playerId]);
 
   useEffect(() => {
     return () => {
-      leavingRef.current = true;
-      if (interestedExitHandledRef.current) return;
+      if (cleanupHandledRef.current) return;
+      const { id: sid, playerId: pid, isHost: host } = cleanupStateRef.current;
+      if (!sid || !pid || host) return;
 
-      const { id: sessionId, playerId: activePlayerId, isHost: activeIsHost, state } = interestedUnmountStateRef.current;
-      if (!sessionId || !activePlayerId || activeIsHost || (state !== "interested" && !pendingExitRef.current)) {
-        return;
-      }
+      const leaveUrl = pendingExitRef.current
+        ? `${API}/sessions/${sid}/leave?player_id=${pid}`
+        : `${API}/sessions/${sid}/leave-if-interested?player_id=${pid}`;
 
-      const leaveUrl = `${API}/sessions/${sessionId}/leave?player_id=${activePlayerId}`;
       if (navigator.sendBeacon) {
         navigator.sendBeacon(leaveUrl, new Blob([], { type: "text/plain" }));
-        return;
+      } else {
+        fetch(leaveUrl, { method: "POST", keepalive: true }).catch(() => {});
       }
-
-      fetch(leaveUrl, {
-        method: "POST",
-        keepalive: true,
-      }).catch(() => {});
     };
   }, []);
 
@@ -479,6 +466,7 @@ export default function SessionPage() {
   };
 
   const joinSession = useCallback(async (state = "interested", { silent = false } = {}) => {
+    pendingExitRef.current = false;
     try {
       const res = await axios.post(`${API}/sessions/${id}/join`, {
         player_id: playerId,
@@ -539,12 +527,18 @@ export default function SessionPage() {
 
   const backToLobby = useCallback(async () => {
     leavingRef.current = true;
-    if (myPlayer?.state === "interested" || pendingExitRef.current) {
-      interestedExitHandledRef.current = true;
-      await leaveSession({ silent: true });
+    cleanupHandledRef.current = true;
+    if (!isHost) {
+      if (pendingExitRef.current) {
+        await leaveSession({ silent: true });
+      } else {
+        try {
+          await axios.post(`${API}/sessions/${id}/leave-if-interested?player_id=${playerId}`);
+        } catch {}
+      }
     }
     navigate("/");
-  }, [leaveSession, myPlayer?.state, navigate]);
+  }, [id, isHost, leaveSession, navigate, playerId]);
 
   const exitLobby = useCallback(async () => {
     pendingExitRef.current = true;
@@ -556,7 +550,7 @@ export default function SessionPage() {
       setSession(res.data);
       setPendingCodeConfirm(false);
       setCodeChanged(false);
-      pendingExitRef.current = false;
+      // pendingExitRef stays true — ensures cleanup on navigation removes the player
     } catch {
       pendingExitRef.current = false;
       toast.error("Failed to exit lobby");
@@ -564,6 +558,7 @@ export default function SessionPage() {
   }, [id, nickname, playerId]);
 
   const updateState = async (state) => {
+    pendingExitRef.current = false;
     try {
       const res = await axios.post(`${API}/sessions/${id}/join`, {
         player_id: playerId,

@@ -495,6 +495,41 @@ async def leave_session(sid: str, player_id: str = Query(...)):
     return result
 
 
+@api_router.post("/sessions/{sid}/leave-if-interested")
+async def leave_if_interested(sid: str, player_id: str = Query(...)):
+    """Remove player only if their current DB state is 'interested'. Used on page
+    unmount so viewers are cleaned up without affecting committed players."""
+    existing = await db.sessions.find_one({"id": sid})
+    if not existing:
+        return {"ok": True}
+    if existing.get("host_id") == player_id:
+        return {"ok": True}
+    result = await db.sessions.update_one(
+        {
+            "id": sid,
+            "players": {
+                "$elemMatch": {
+                    "player_id": player_id,
+                    "state": "interested",
+                }
+            },
+        },
+        {
+            "$pull": {"players": {"player_id": player_id, "state": "interested"}},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()},
+        },
+    )
+    if result.modified_count:
+        mgr.clear_session_presence(sid, player_id)
+        await auto_update_status(sid)
+        updated = await db.sessions.find_one({"id": sid}, {"_id": 0})
+        if updated:
+            cleaned = clean(updated)
+            await mgr.broadcast(f"session:{sid}", {"type": "session_updated", "session": cleaned})
+            await mgr.broadcast("lobby", {"type": "session_updated", "session": cleaned})
+    return {"ok": True}
+
+
 @api_router.post("/sessions/{sid}/exit-lobby")
 async def exit_lobby(sid: str, data: PlayerAction):
     session = await db.sessions.find_one({"id": sid})
