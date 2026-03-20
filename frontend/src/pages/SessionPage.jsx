@@ -1199,7 +1199,7 @@ export default function SessionPage() {
             </div>
 
             {/* Readiness Controls */}
-            {session.status !== "ended" && (
+            {session.status !== "ended" && !isHost && (
               <div
                 className="bg-card border border-white/5 p-5"
                 data-testid="readiness-section"
