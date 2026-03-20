@@ -84,6 +84,16 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 - Backend: 100% (11/11 tests)
 - Frontend: 100%
 
+### Phase 6.1 (2026-02-XX) - Single-Lobby Enforcement
+- [x] Players can only be in "in_lobby" state in one session at a time
+- [x] Backend returns 409 with conflicting session info when trying to join while in_lobby elsewhere
+- [x] `leave_conflicting` query param auto-removes from old session before joining new one
+- [x] Frontend shows AlertDialog prompting user to leave the other lobby
+- [x] "Stay" dismisses dialog, "Leave & Join This One" resolves conflict and proceeds
+- [x] Joining as "interested" or being "joining" elsewhere does NOT trigger conflict
+- Backend: 100% (20/20 including regression)
+- Frontend: 100%
+
 ## Prioritized Backlog
 ### P1
 - Session sharing link with rich preview
