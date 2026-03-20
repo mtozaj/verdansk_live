@@ -39,7 +39,7 @@ export const HeroSection = ({ stats }) => {
                   {stats?.active_sessions || 0}
                 </span>
                 <span className="text-muted-foreground ml-1">
-                  active sessions
+                  active {(stats?.active_sessions || 0) === 1 ? "session" : "sessions"}
                 </span>
               </span>
             </div>
@@ -53,7 +53,7 @@ export const HeroSection = ({ stats }) => {
                   {stats?.online_viewers || 0}
                 </span>
                 <span className="text-muted-foreground ml-1">
-                  users online
+                  {(stats?.online_viewers || 0) === 1 ? "user" : "users"} online
                 </span>
               </span>
             </div>
