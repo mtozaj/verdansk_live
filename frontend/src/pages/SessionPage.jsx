@@ -252,6 +252,7 @@ export default function SessionPage() {
   const chatSectionRef = useRef(null);
   const autoInterestAttemptRef = useRef("");
   const leavingRef = useRef(false);
+  const pendingExitRef = useRef(false);
   const interestedExitHandledRef = useRef(false);
   const interestedUnmountStateRef = useRef({
     id,
@@ -283,7 +284,7 @@ export default function SessionPage() {
       if (interestedExitHandledRef.current) return;
 
       const { id: sessionId, playerId: activePlayerId, isHost: activeIsHost, state } = interestedUnmountStateRef.current;
-      if (!sessionId || !activePlayerId || activeIsHost || state !== "interested") {
+      if (!sessionId || !activePlayerId || activeIsHost || (state !== "interested" && !pendingExitRef.current)) {
         return;
       }
 
@@ -538,7 +539,7 @@ export default function SessionPage() {
 
   const backToLobby = useCallback(async () => {
     leavingRef.current = true;
-    if (myPlayer?.state === "interested") {
+    if (myPlayer?.state === "interested" || pendingExitRef.current) {
       interestedExitHandledRef.current = true;
       await leaveSession({ silent: true });
     }
@@ -546,6 +547,7 @@ export default function SessionPage() {
   }, [leaveSession, myPlayer?.state, navigate]);
 
   const exitLobby = useCallback(async () => {
+    pendingExitRef.current = true;
     try {
       const res = await axios.post(`${API}/sessions/${id}/exit-lobby`, {
         player_id: playerId,
@@ -554,7 +556,9 @@ export default function SessionPage() {
       setSession(res.data);
       setPendingCodeConfirm(false);
       setCodeChanged(false);
+      pendingExitRef.current = false;
     } catch {
+      pendingExitRef.current = false;
       toast.error("Failed to exit lobby");
     }
   }, [id, nickname, playerId]);
