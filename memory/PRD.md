@@ -90,7 +90,8 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 - [x] `leave_conflicting` query param auto-removes from old session before joining new one
 - [x] Frontend shows AlertDialog prompting user to leave the other lobby
 - [x] "Stay" dismisses dialog, "Leave & Join This One" resolves conflict and proceeds
-- [x] Joining as "interested" or being "joining" elsewhere does NOT trigger conflict
+- [x] Joining as "interested" does NOT trigger conflict
+- [x] "joining" state elsewhere is silently cleaned up (no dialog) when committing to a new session
 - Backend: 100% (20/20 including regression)
 - Frontend: 100%
 

@@ -430,6 +430,7 @@ async def join_session(sid: str, data: PlayerAction, leave_conflicting: str = Qu
         is_advancing_to_joining = target_state == "joining"
 
     if is_advancing_to_joining:
+        # Check for in_lobby conflict (requires user confirmation)
         conflict = await db.sessions.find_one(
             {
                 "id": {"$ne": sid},
@@ -466,6 +467,33 @@ async def join_session(sid: str, data: PlayerAction, leave_conflicting: str = Qu
                         "conflicting_session_title": conflict.get("title", "Unknown"),
                     },
                 )
+
+        # Silently remove from any other session where player is "joining"
+        joining_conflicts = await db.sessions.find(
+            {
+                "id": {"$ne": sid},
+                "status": {"$nin": ["ended"]},
+                "players": {
+                    "$elemMatch": {"player_id": data.player_id, "state": "joining"}
+                },
+            },
+            {"_id": 0, "id": 1},
+        ).to_list(50)
+        for jc in joining_conflicts:
+            await db.sessions.update_one(
+                {"id": jc["id"]},
+                {
+                    "$pull": {"players": {"player_id": data.player_id}},
+                    "$set": {"updated_at": now},
+                },
+            )
+            mgr.clear_session_presence(jc["id"], data.player_id)
+            await auto_update_status(jc["id"])
+            jc_updated = await db.sessions.find_one({"id": jc["id"]}, {"_id": 0})
+            if jc_updated:
+                jc_result = clean(jc_updated)
+                await mgr.broadcast(f"session:{jc['id']}", {"type": "session_updated", "session": jc_result})
+                await mgr.broadcast("lobby", {"type": "session_updated", "session": jc_result})
 
     if existing:
         current_state = existing.get("state")
