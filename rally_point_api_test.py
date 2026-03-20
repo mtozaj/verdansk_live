@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
 class RallyPointAPITester:
-    def __init__(self, base_url="https://codebase-review-81.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://squad-nexus-1.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
