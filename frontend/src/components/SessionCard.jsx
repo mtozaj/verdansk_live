@@ -38,17 +38,23 @@ const ACCENT_COLORS = {
   expired: "bg-red-500",
 };
 
-export const SessionCard = ({ session, featured }) => {
+export const SessionCard = ({ session, featured, playerId }) => {
   const navigate = useNavigate();
   const displayState = getSessionDisplayState(session);
   const status = STATUS_STYLES[displayState] || STATUS_STYLES.filling;
   const accentColor = ACCENT_COLORS[displayState] || "bg-primary";
   const progress = getSessionStartProgress(session);
+  const myPlayer = playerId && session.players?.find((p) => p.player_id === playerId);
+  const amInLobby = myPlayer?.state === "in_lobby";
 
   return (
     <div
       onClick={() => navigate(`/session/${session.id}`)}
-      className={`bg-card border border-white/5 relative overflow-hidden group cursor-pointer hover:border-primary/40 transition-colors duration-300 ${featured ? "md:col-span-2" : ""}`}
+      className={`bg-card border relative overflow-hidden group cursor-pointer transition-colors duration-300 ${
+        amInLobby
+          ? "border-emerald-500/40 hover:border-emerald-500/60"
+          : "border-white/5 hover:border-primary/40"
+      } ${featured ? "md:col-span-2" : ""}`}
       data-testid={`session-card-${session.id}`}
       role="button"
       tabIndex={0}
@@ -72,6 +78,18 @@ export const SessionCard = ({ session, featured }) => {
             {status.label}
           </Badge>
         </div>
+
+        {amInLobby && (
+          <div
+            className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 mb-3"
+            data-testid={`in-lobby-badge-${session.id}`}
+          >
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-mono text-[10px] text-emerald-400 uppercase tracking-wider font-bold">
+              You're in this lobby
+            </span>
+          </div>
+        )}
 
         <h3
           className="font-heading text-lg font-bold text-foreground mb-3 line-clamp-1"

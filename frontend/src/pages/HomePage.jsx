@@ -6,6 +6,7 @@ import { HeroSection } from "@/components/HeroSection";
 import { FilterBar } from "@/components/FilterBar";
 import { SessionCard } from "@/components/SessionCard";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { usePlayer } from "@/hooks/usePlayer";
 import { Radio } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -13,6 +14,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 export default function HomePage() {
   const [sessions, setSessions] = useState([]);
   const [stats, setStats] = useState(null);
+  const { playerId } = usePlayer();
   const [filters, setFilters] = useState({
     region: "all",
     status: "all",
@@ -135,7 +137,7 @@ export default function HomePage() {
                 className={`animate-slide-up stagger-${Math.min(i + 1, 6)}`}
                 style={{ opacity: 0 }}
               >
-                <SessionCard session={session} featured={i === 0} />
+                <SessionCard session={session} featured={i === 0} playerId={playerId} />
               </div>
             ))}
           </div>
