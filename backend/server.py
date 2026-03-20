@@ -443,15 +443,19 @@ async def join_session(sid: str, data: PlayerAction, leave_conflicting: str = Qu
         )
         if conflict:
             if leave_conflicting == conflict["id"]:
-                await db.sessions.update_one(
-                    {"id": conflict["id"]},
-                    {
-                        "$pull": {"players": {"player_id": data.player_id}},
-                        "$set": {"updated_at": now},
-                    },
-                )
+                # If player is the host of the conflicting session, end it
+                c_full = await db.sessions.find_one({"id": conflict["id"]})
+                is_host_of_conflict = c_full and c_full.get("host_id") == data.player_id
+                update_ops = {
+                    "$pull": {"players": {"player_id": data.player_id}},
+                    "$set": {"updated_at": now},
+                }
+                if is_host_of_conflict:
+                    update_ops["$set"]["status"] = "ended"
+                await db.sessions.update_one({"id": conflict["id"]}, update_ops)
                 mgr.clear_session_presence(conflict["id"], data.player_id)
-                await auto_update_status(conflict["id"])
+                if not is_host_of_conflict:
+                    await auto_update_status(conflict["id"])
                 c_updated = await db.sessions.find_one({"id": conflict["id"]}, {"_id": 0})
                 if c_updated:
                     c_result = clean(c_updated)
@@ -480,15 +484,18 @@ async def join_session(sid: str, data: PlayerAction, leave_conflicting: str = Qu
             {"_id": 0, "id": 1},
         ).to_list(50)
         for jc in joining_conflicts:
-            await db.sessions.update_one(
-                {"id": jc["id"]},
-                {
-                    "$pull": {"players": {"player_id": data.player_id}},
-                    "$set": {"updated_at": now},
-                },
-            )
+            jc_full = await db.sessions.find_one({"id": jc["id"]})
+            is_host_of_jc = jc_full and jc_full.get("host_id") == data.player_id
+            jc_update = {
+                "$pull": {"players": {"player_id": data.player_id}},
+                "$set": {"updated_at": now},
+            }
+            if is_host_of_jc:
+                jc_update["$set"]["status"] = "ended"
+            await db.sessions.update_one({"id": jc["id"]}, jc_update)
             mgr.clear_session_presence(jc["id"], data.player_id)
-            await auto_update_status(jc["id"])
+            if not is_host_of_jc:
+                await auto_update_status(jc["id"])
             jc_updated = await db.sessions.find_one({"id": jc["id"]}, {"_id": 0})
             if jc_updated:
                 jc_result = clean(jc_updated)
