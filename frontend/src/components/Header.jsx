@@ -37,7 +37,7 @@ export const Header = ({ stats, onHomeClick }) => {
           <div className="flex items-center gap-3">
             {nickname && (
               <span
-                className="text-xs font-mono text-muted-foreground hidden sm:block"
+                className="text-xs font-mono text-muted-foreground"
                 data-testid="header-nickname"
               >
                 {nickname}
