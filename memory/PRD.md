@@ -12,8 +12,8 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 ## Core Requirements (Static)
 - Verdansk ONLY - no other maps
 - Min players: 50 (hardcoded), Max: 152
-- Strict one-way status transitions: filling → starting → in_progress → ended
-- Strict one-way player states: interested → joining → in_lobby
+- Strict one-way status transitions: filling -> starting -> in_progress -> ended
+- Strict one-way player states: interested -> joining -> in_lobby
 - Match code LOCKED until player commits to joining
 - No "ready" state - simplified 3-state model
 
@@ -30,14 +30,14 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 - [x] Strict one-way status transitions (backend enforced)
 - [x] Strict one-way player state transitions (backend enforced)
 - [x] Match code locking (only visible to joining/in_lobby players)
-- [x] Removed "ready" state (interested → joining → in_lobby)
+- [x] Removed "ready" state (interested -> joining -> in_lobby)
 - [x] Progressive readiness UI (shows only next action)
 - [x] Simplified create session form (title, code, region only)
 
 ### Phase 3 (2026-03-16) - Bug Fix
 - [x] Fixed WelcomeRules scroll & button click (z-index conflict with NicknamePrompt portal)
-- [x] Fixed NicknamePrompt not appearing after rules dismissal (React Hooks violation — usePlayer() called after early return)
-- [x] Fixed auto-scroll bug on SessionPage — ChatFeed's scrollIntoView was scrolling the entire page on mobile/zoomed views
+- [x] Fixed NicknamePrompt not appearing after rules dismissal (React Hooks violation)
+- [x] Fixed auto-scroll bug on SessionPage — ChatFeed's scrollIntoView was scrolling the entire page
 
 ### Phase 4 (2026-03-16) - Host Heartbeat & Staleness
 - [x] Host heartbeat system — browser sends ping every 60s via WebSocket
@@ -46,7 +46,7 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 - [x] "Host Inactive" indicator on session cards in homepage
 - [x] Host returning auto-clears the inactive flag
 - [x] Fixed "starting" status sessions not being auto-expired (30 min timeout)
-- [x] Updated page title & OG meta tags for proper link previews (Rally Point branding)
+- [x] Updated page title & OG meta tags for proper link previews
 - [x] Generated OG preview image for social sharing
 - [x] Removed Emergent badge via MutationObserver
 
@@ -54,14 +54,35 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 - [x] 30-minute countdown timer on session page (matches Warzone's lobby expiry)
 - [x] Timer turns yellow in last 5 minutes, red when expired
 - [x] "Lobby Expired" prompt for host with Reset Lobby button + new code input
-- [x] "Lobby Expired — Waiting for host" message for players
+- [x] "Lobby Expired -- Waiting for host" message for players
 - [x] Reset Lobby endpoint: resets timer, updates code, moves in_lobby players back to joining
 - [x] "NEW CODE" flashing green badge on match code display when code changes
-- [x] Toast notifications for code changes and lobby resets to all connected players
+- [x] Toast notifications for code changes and lobby resets
 - [x] Manual code update also resets the 30-min timer
 - Backend: 100% (18/18 tests)
 - Frontend: 100%
 - Integration: 100%
+
+### Phase 5.5 - Chat, Host Controls, UI Refinements
+- [x] @Mention system in chat with autocomplete dropdown, highlighting, toast notifications
+- [x] Host Controls refactor: "Typo Correction" (pencil edit, no timer reset) vs "Reset Lobby" (full reset)
+- [x] Status color system: Yellow (interested/filling) -> Blue (joining/starting) -> Green (in_lobby/in_progress)
+- [x] Onboarding UX: replaced mandatory rules wall with on-demand help dialog
+- [x] Chat bug fixes: instant message display for sender, long message overflow
+- [x] iOS UX: resolved auto-zoom on inputs, background scroll-lock on modals
+- [x] Data persistence fixes: player state cleanup on navigation, needs_reconfirm flag
+- [x] OG image update with cache-busting
+- [x] Active Sessions count excludes expired sessions
+- [x] Numerous UI text updates for clarity
+
+### Phase 6 (2026-02-XX) - Server-Side Cleanup Fix
+- [x] Fixed "stuck interested player" bug — race condition between exitLobby and navigation cleanup
+- [x] New backend endpoint `POST /sessions/{sid}/leave-if-interested` — atomically removes player only if DB state is "interested"
+- [x] Simplified frontend cleanup: server decides whether to remove, no more stale closure issues
+- [x] `pendingExitRef` stays true after exitLobby to ensure full `/leave` on navigation
+- [x] Reset `pendingExitRef` when user takes a new action (rejoin)
+- Backend: 100% (11/11 tests)
+- Frontend: 100%
 
 ## Prioritized Backlog
 ### P1
@@ -73,3 +94,19 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 - Session history / recent sessions
 - Player profiles
 - Discord bot integration
+
+## Key API Endpoints
+- `POST /api/sessions` - Create session
+- `GET /api/sessions` - List sessions
+- `GET /api/sessions/{sid}` - Get session
+- `PATCH /api/sessions/{sid}` - Update session (query: host_id, reset_timer)
+- `POST /api/sessions/{sid}/join` - Join/update state
+- `POST /api/sessions/{sid}/leave` - Full player removal
+- `POST /api/sessions/{sid}/leave-if-interested` - Conditional removal (only if interested)
+- `POST /api/sessions/{sid}/exit-lobby` - Move joining/in_lobby back to interested
+- `POST /api/sessions/{sid}/reset-lobby` - Reset expired lobby
+- `PATCH /api/sessions/{sid}/external-count` - Update external player count
+- `POST /api/sessions/{sid}/chat` - Send chat message
+- `GET /api/sessions/{sid}/chat` - Get chat messages
+- `WS /api/ws/lobby` - Lobby real-time updates
+- `WS /api/ws/session/{sid}` - Session real-time updates
