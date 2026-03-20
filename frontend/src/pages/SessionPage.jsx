@@ -246,6 +246,7 @@ export default function SessionPage() {
   const [editCode, setEditCode] = useState("");
   const [pendingCodeConfirm, setPendingCodeConfirm] = useState(false);
   const [autoInterestPending, setAutoInterestPending] = useState(false);
+  const [externalDraft, setExternalDraft] = useState(null);
   const codeChangedTimer = useRef(null);
   const expiryToastShownRef = useRef(false);
   const chatSectionRef = useRef(null);
@@ -939,19 +940,33 @@ export default function SessionPage() {
                           </Button>
                           <div className="flex items-center gap-1">
                             <input
-                              type="number"
-                              min={session.website_in_lobby_count ?? 0}
-                              max={session.max_players ?? 152}
-                              value={session.in_lobby_count}
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={externalDraft !== null ? externalDraft : session.in_lobby_count}
+                              onFocus={(e) => {
+                                setExternalDraft(String(session.in_lobby_count));
+                                setTimeout(() => e.target.select(), 0);
+                              }}
                               onChange={(e) => {
-                                const val = parseInt(e.target.value, 10);
-                                if (!isNaN(val)) setExternalCountAbsolute(val);
+                                const raw = e.target.value.replace(/[^0-9]/g, "");
+                                setExternalDraft(raw);
                               }}
-                              onBlur={(e) => {
-                                const val = parseInt(e.target.value, 10);
-                                if (!isNaN(val)) setExternalCountAbsolute(val);
+                              onBlur={() => {
+                                if (externalDraft !== null && externalDraft !== "") {
+                                  setExternalCountAbsolute(parseInt(externalDraft, 10));
+                                }
+                                setExternalDraft(null);
                               }}
-                              className="w-12 h-8 bg-transparent border border-transparent hover:border-white/10 focus:border-primary/50 focus:outline-none rounded text-center font-mono text-sm text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.target.blur();
+                                } else if (e.key === "Escape") {
+                                  setExternalDraft(null);
+                                  e.target.blur();
+                                }
+                              }}
+                              className="w-12 h-8 bg-transparent border border-transparent hover:border-white/10 focus:border-primary/50 focus:bg-white/5 focus:outline-none rounded text-center font-mono text-sm text-foreground"
                               data-testid="external-count-display"
                             />
                             <span className="text-muted-foreground text-[10px] font-mono">/ {session.max_players}</span>
