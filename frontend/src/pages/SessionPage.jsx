@@ -251,6 +251,7 @@ export default function SessionPage() {
   const expiryToastShownRef = useRef(false);
   const chatSectionRef = useRef(null);
   const autoInterestAttemptRef = useRef("");
+  const leavingRef = useRef(false);
   const interestedExitHandledRef = useRef(false);
   const interestedUnmountStateRef = useRef({
     id,
@@ -278,6 +279,7 @@ export default function SessionPage() {
 
   useEffect(() => {
     return () => {
+      leavingRef.current = true;
       if (interestedExitHandledRef.current) return;
 
       const { id: sessionId, playerId: activePlayerId, isHost: activeIsHost, state } = interestedUnmountStateRef.current;
@@ -495,6 +497,7 @@ export default function SessionPage() {
   // Clear auto-interest lock when user is removed from session (e.g. stale cleanup)
   useEffect(() => {
     if (!session || loading || !playerId) return;
+    if (leavingRef.current) return;
     if (!session.players?.some((p) => p.player_id === playerId)) {
       autoInterestAttemptRef.current = "";
     }
@@ -534,6 +537,7 @@ export default function SessionPage() {
   }, [id, playerId]);
 
   const backToLobby = useCallback(async () => {
+    leavingRef.current = true;
     if (myPlayer?.state === "interested") {
       interestedExitHandledRef.current = true;
       await leaveSession({ silent: true });
