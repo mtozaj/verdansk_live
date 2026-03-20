@@ -408,7 +408,7 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
 
 
 @api_router.post("/sessions/{sid}/join")
-async def join_session(sid: str, data: PlayerAction):
+async def join_session(sid: str, data: PlayerAction, leave_conflicting: str = Query("")):
     s = await db.sessions.find_one({"id": sid})
     if not s:
         raise HTTPException(404, "Session not found")
@@ -420,6 +420,52 @@ async def join_session(sid: str, data: PlayerAction):
     existing = next(
         (p for p in s.get("players", []) if p["player_id"] == data.player_id), None
     )
+
+    # Enforce single-lobby rule: if transitioning to "joining", check for in_lobby elsewhere
+    target_state = data.state
+    if existing:
+        current_state = existing.get("state")
+        is_advancing_to_joining = current_state == "interested" and target_state == "joining"
+    else:
+        is_advancing_to_joining = target_state == "joining"
+
+    if is_advancing_to_joining:
+        conflict = await db.sessions.find_one(
+            {
+                "id": {"$ne": sid},
+                "status": {"$nin": ["ended"]},
+                "players": {
+                    "$elemMatch": {"player_id": data.player_id, "state": "in_lobby"}
+                },
+            },
+            {"_id": 0, "id": 1, "title": 1},
+        )
+        if conflict:
+            if leave_conflicting == conflict["id"]:
+                await db.sessions.update_one(
+                    {"id": conflict["id"]},
+                    {
+                        "$pull": {"players": {"player_id": data.player_id}},
+                        "$set": {"updated_at": now},
+                    },
+                )
+                mgr.clear_session_presence(conflict["id"], data.player_id)
+                await auto_update_status(conflict["id"])
+                c_updated = await db.sessions.find_one({"id": conflict["id"]}, {"_id": 0})
+                if c_updated:
+                    c_result = clean(c_updated)
+                    await mgr.broadcast(f"session:{conflict['id']}", {"type": "session_updated", "session": c_result})
+                    await mgr.broadcast("lobby", {"type": "session_updated", "session": c_result})
+            else:
+                from fastapi.responses import JSONResponse
+                return JSONResponse(
+                    status_code=409,
+                    content={
+                        "detail": "already_in_lobby",
+                        "conflicting_session_id": conflict["id"],
+                        "conflicting_session_title": conflict.get("title", "Unknown"),
+                    },
+                )
 
     if existing:
         current_state = existing.get("state")

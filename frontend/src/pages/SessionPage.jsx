@@ -29,6 +29,16 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { usePlayer } from "@/hooks/usePlayer";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { ChatFeed } from "@/components/ChatFeed";
@@ -247,6 +257,7 @@ export default function SessionPage() {
   const [pendingCodeConfirm, setPendingCodeConfirm] = useState(false);
   const [autoInterestPending, setAutoInterestPending] = useState(false);
   const [externalDraft, setExternalDraft] = useState(null);
+  const [lobbyConflict, setLobbyConflict] = useState(null);
   const codeChangedTimer = useRef(null);
   const expiryToastShownRef = useRef(false);
   const chatSectionRef = useRef(null);
@@ -475,7 +486,15 @@ export default function SessionPage() {
       });
       setSession(res.data);
       return res.data;
-    } catch {
+    } catch (err) {
+      if (err.response?.status === 409 && err.response?.data?.detail === "already_in_lobby") {
+        setLobbyConflict({
+          sessionId: err.response.data.conflicting_session_id,
+          sessionTitle: err.response.data.conflicting_session_title,
+          targetState: state,
+        });
+        return null;
+      }
       if (!silent) {
         toast.error("Failed to join");
       }
@@ -566,8 +585,30 @@ export default function SessionPage() {
         state,
       });
       setSession(res.data);
+    } catch (err) {
+      if (err.response?.status === 409 && err.response?.data?.detail === "already_in_lobby") {
+        setLobbyConflict({
+          sessionId: err.response.data.conflicting_session_id,
+          sessionTitle: err.response.data.conflicting_session_title,
+          targetState: state,
+        });
+      }
+    }
+  };
+
+  const confirmLeaveLobby = async () => {
+    if (!lobbyConflict) return;
+    const { sessionId: conflictId, targetState } = lobbyConflict;
+    setLobbyConflict(null);
+    try {
+      const res = await axios.post(
+        `${API}/sessions/${id}/join?leave_conflicting=${conflictId}`,
+        { player_id: playerId, nickname, state: targetState }
+      );
+      setSession(res.data);
+      toast.success("Left the other lobby and joined this one");
     } catch {
-      // silent
+      toast.error("Failed to switch lobbies");
     }
   };
 
@@ -1357,6 +1398,36 @@ export default function SessionPage() {
           )}
         </button>
       </main>
+
+      <AlertDialog open={!!lobbyConflict} onOpenChange={(open) => { if (!open) setLobbyConflict(null); }}>
+        <AlertDialogContent className="bg-card border-white/10" data-testid="lobby-conflict-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-heading uppercase tracking-wider text-foreground">
+              Already In A Lobby
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-mono text-sm text-muted-foreground">
+              You're currently in the lobby for{" "}
+              <span className="text-primary font-bold">{lobbyConflict?.sessionTitle}</span>.
+              You can only be in one lobby at a time. Leave that lobby to join this one?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="font-mono text-xs uppercase tracking-wider"
+              data-testid="lobby-conflict-cancel"
+            >
+              Stay
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmLeaveLobby}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-mono text-xs uppercase tracking-wider"
+              data-testid="lobby-conflict-confirm"
+            >
+              Leave &amp; Join This One
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
