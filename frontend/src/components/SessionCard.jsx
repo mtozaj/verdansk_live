@@ -46,12 +46,13 @@ export const SessionCard = ({ session, featured, playerId }) => {
   const progress = getSessionStartProgress(session);
   const myPlayer = playerId && session.players?.find((p) => p.player_id === playerId);
   const amInLobby = myPlayer?.state === "in_lobby";
+  const amHost = playerId && session.host_id === playerId;
 
   return (
     <div
       onClick={() => navigate(`/session/${session.id}`)}
       className={`bg-card border relative overflow-hidden group cursor-pointer transition-colors duration-300 ${
-        amInLobby
+        amInLobby || amHost
           ? "border-emerald-500/40 hover:border-emerald-500/60"
           : "border-white/5 hover:border-primary/40"
       } ${featured ? "md:col-span-2" : ""}`}
@@ -79,14 +80,14 @@ export const SessionCard = ({ session, featured, playerId }) => {
           </Badge>
         </div>
 
-        {amInLobby && (
+        {(amInLobby || amHost) && (
           <div
             className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 mb-3"
             data-testid={`in-lobby-badge-${session.id}`}
           >
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-mono text-[10px] text-emerald-400 uppercase tracking-wider font-bold">
-              You're in this lobby
+              {amHost ? "You're hosting this lobby" : "You're in this lobby"}
             </span>
           </div>
         )}
