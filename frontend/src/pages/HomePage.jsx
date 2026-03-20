@@ -56,25 +56,28 @@ export default function HomePage() {
     (data) => {
       if (data.type === "new_session") {
         setSessions((prev) => [data.session, ...prev]);
-        toast("New session available!", {
-          description: data.session.title,
-        });
-        if (
-          "Notification" in window &&
-          Notification.permission === "granted"
-        ) {
-          try {
-            new Notification("Rally Point", {
-              body: `New session: ${data.session.title}`,
-            });
-          } catch {
-            // ignore
+        if (data.session.host_id !== playerId) {
+          toast("New session available!", {
+            description: data.session.title,
+          });
+          if (
+            "Notification" in window &&
+            Notification.permission === "granted"
+          ) {
+            try {
+              new Notification("Rally Point", {
+                body: `New session: ${data.session.title}`,
+              });
+            } catch {
+              // ignore
+            }
           }
         }
       } else if (data.type === "session_updated") {
         setSessions((prev) => {
           const previousSession = prev.find((s) => s.id === data.session.id);
           if (
+            data.session.host_id !== playerId &&
             previousSession?.status !== "almost_full" &&
             data.session.status === "almost_full"
           ) {
@@ -88,7 +91,7 @@ export default function HomePage() {
       }
       fetchStats();
     },
-    [fetchStats]
+    [fetchStats, playerId]
   );
 
   useWebSocket("/api/ws/lobby", handleWsMessage);
