@@ -37,8 +37,8 @@ export const HeroSection = ({ stats }) => {
               <span className="font-mono text-sm">
                 <span className="text-foreground font-bold">
                   {stats?.active_sessions || 0}
-                </span>
-                <span className="text-muted-foreground ml-1">
+                </span>{" "}
+                <span className="text-muted-foreground">
                   active {(stats?.active_sessions || 0) === 1 ? "session" : "sessions"}
                 </span>
               </span>
@@ -51,8 +51,8 @@ export const HeroSection = ({ stats }) => {
               <span className="font-mono text-sm">
                 <span className="text-foreground font-bold">
                   {stats?.online_viewers || 0}
-                </span>
-                <span className="text-muted-foreground ml-1">
+                </span>{" "}
+                <span className="text-muted-foreground">
                   {(stats?.online_viewers || 0) === 1 ? "user" : "users"} online
                 </span>
               </span>
