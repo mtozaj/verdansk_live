@@ -21,6 +21,8 @@ import {
   RotateCcw,
   MessageSquare,
   Pencil,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -590,6 +592,23 @@ export default function SessionPage() {
     }
   };
 
+  const updateExternalCount = async (delta) => {
+    const websiteCount = session?.website_in_lobby_count ?? 0;
+    const currentExternal = session?.external_in_lobby ?? 0;
+    const maxPlayers = session?.max_players ?? 152;
+    const newExternal = Math.max(0, Math.min(currentExternal + delta, maxPlayers - websiteCount));
+    if (newExternal === currentExternal) return;
+    try {
+      const res = await axios.patch(
+        `${API}/sessions/${id}/external-count?host_id=${playerId}`,
+        { external_in_lobby: newExternal }
+      );
+      setSession(res.data);
+    } catch {
+      toast.error("Failed to update lobby count");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen">
@@ -857,6 +876,46 @@ export default function SessionPage() {
                       <Square className="w-3 h-3 mr-1" /> End Session
                     </Button>
                   </div>
+                  {!session.lobby_expired && (session.status === "filling" || session.status === "almost_full" || session.status === "starting") && (
+                    <>
+                      <Separator className="bg-white/5" />
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono mb-2">
+                          Adjust In-Lobby Count (external players)
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            onClick={() => updateExternalCount(-1)}
+                            variant="outline"
+                            size="sm"
+                            disabled={(session.external_in_lobby ?? 0) <= 0}
+                            className="h-8 w-8 p-0 border-white/10"
+                            data-testid="external-count-minus"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="font-mono text-sm text-foreground min-w-[60px] text-center" data-testid="external-count-display">
+                            {session.in_lobby_count} <span className="text-muted-foreground text-[10px]">/ {session.max_players}</span>
+                          </span>
+                          <Button
+                            onClick={() => updateExternalCount(1)}
+                            variant="outline"
+                            size="sm"
+                            disabled={session.in_lobby_count >= session.max_players}
+                            className="h-8 w-8 p-0 border-white/10"
+                            data-testid="external-count-plus"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        {(session.external_in_lobby ?? 0) > 0 && (
+                          <p className="text-[10px] text-muted-foreground font-mono mt-1.5">
+                            {session.website_in_lobby_count} from website + {session.external_in_lobby} external
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -1001,6 +1060,11 @@ export default function SessionPage() {
                 <span className="text-center">{session.joining_count} joining soon</span>
                 <span className="text-right">{session.in_lobby_count}/{session.max_players} capacity</span>
               </div>
+              {(session.external_in_lobby ?? 0) > 0 && (
+                <p className="text-[10px] text-muted-foreground/60 font-mono mt-1.5 text-right">
+                  includes {session.external_in_lobby} external {session.external_in_lobby === 1 ? "player" : "players"}
+                </p>
+              )}
             </div>
 
             {/* Readiness Controls */}

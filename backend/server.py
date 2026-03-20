@@ -194,6 +194,7 @@ async def reconcile_lobby_expiry(session: Optional[dict], broadcast: bool = Fals
     updates = {}
     if newly_expired:
         updates["lobby_expired_at"] = now.isoformat()
+        updates["external_in_lobby"] = 0
     if players_changed:
         updates["players"] = updated_players
     if updates:
@@ -217,11 +218,16 @@ async def reconcile_lobby_expiry(session: Optional[dict], broadcast: bool = Fals
 def clean(doc):
     doc.pop("_id", None)
     ps = doc.get("players", [])
+    max_players = doc.get("max_players", 152)
     doc["player_count"] = len(ps)
     doc["interested_count"] = sum(1 for p in ps if p.get("state") == "interested")
     doc["joining_count"] = sum(1 for p in ps if p.get("state") == "joining")
     doc["ready_count"] = sum(1 for p in ps if p.get("state") in ("joining", "in_lobby"))
-    doc["in_lobby_count"] = sum(1 for p in ps if p.get("state") == "in_lobby")
+    website_in_lobby = sum(1 for p in ps if p.get("state") == "in_lobby")
+    external = min(doc.get("external_in_lobby", 0), max(max_players - website_in_lobby, 0))
+    doc["website_in_lobby_count"] = website_in_lobby
+    doc["external_in_lobby"] = external
+    doc["in_lobby_count"] = website_in_lobby + external
     doc["host_inactive"] = doc.get("host_inactive", False)
     doc["host_last_heartbeat"] = doc.get("host_last_heartbeat")
     doc["lobby_reset_at"] = doc.get("lobby_reset_at", doc.get("created_at"))
@@ -241,7 +247,9 @@ async def auto_update_status(sid: str):
     if not s or s["status"] not in ("filling", "almost_full"):
         return
     ps = s.get("players", [])
-    in_lobby = sum(1 for p in ps if p.get("state") == "in_lobby")
+    website_in_lobby = sum(1 for p in ps if p.get("state") == "in_lobby")
+    external = min(s.get("external_in_lobby", 0), max(s.get("max_players", 152) - website_in_lobby, 0))
+    in_lobby = website_in_lobby + external
     max_players = s.get("max_players", 152)
     threshold = max_players * 0.8
 
@@ -300,6 +308,7 @@ async def create_session(data: SessionCreate):
         "lobby_expired_at": None,
         "host_last_heartbeat": now,
         "host_inactive": False,
+        "external_in_lobby": 0,
         "host_sessions_count": hosted + 1,
         "host_success_rate": round(launched / max(hosted, 1), 2),
     }
@@ -359,6 +368,7 @@ async def update_session(sid: str, data: SessionUpdate, host_id: str = Query("")
         if reset_timer:
             upd["lobby_reset_at"] = upd["updated_at"]
             upd["lobby_expired_at"] = None
+            upd["external_in_lobby"] = 0
             current_status = s.get("status", "filling")
             # Reset status if in starting/in_progress
             if current_status in ("starting", "in_progress"):
@@ -531,6 +541,10 @@ class ResetLobby(BaseModel):
     match_code: str
 
 
+class ExternalCount(BaseModel):
+    external_in_lobby: int
+
+
 @api_router.post("/sessions/{sid}/reset-lobby")
 async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
     s = await db.sessions.find_one({"id": sid})
@@ -563,6 +577,7 @@ async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
                 "lobby_expired_at": None,
                 "updated_at": now,
                 "status": "filling",
+                "external_in_lobby": 0,
             }
         },
     )
@@ -573,6 +588,35 @@ async def reset_lobby(sid: str, data: ResetLobby, host_id: str = Query("")):
     await mgr.broadcast(f"session:{sid}", {"type": "session_updated", "session": result})
     await mgr.broadcast(f"session:{sid}", {"type": "code_changed", "match_code": data.match_code})
     await mgr.broadcast(f"session:{sid}", {"type": "lobby_reset"})
+    await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
+    return result
+
+
+@api_router.patch("/sessions/{sid}/external-count")
+async def update_external_count(sid: str, data: ExternalCount, host_id: str = Query("")):
+    s = await db.sessions.find_one({"id": sid})
+    if not s:
+        raise HTTPException(404, "Session not found")
+    s = await reconcile_lobby_expiry(s, broadcast=True)
+    if not host_id or s["host_id"] != host_id:
+        raise HTTPException(403, "Only host can update external count")
+    if s["status"] == "ended":
+        raise HTTPException(400, "Session ended")
+
+    ps = s.get("players", [])
+    website_in_lobby = sum(1 for p in ps if p.get("state") == "in_lobby")
+    max_players = s.get("max_players", 152)
+    clamped = max(0, min(data.external_in_lobby, max_players - website_in_lobby))
+
+    now = datetime.now(timezone.utc).isoformat()
+    await db.sessions.update_one(
+        {"id": sid},
+        {"$set": {"external_in_lobby": clamped, "updated_at": now}},
+    )
+    await auto_update_status(sid)
+    updated = await db.sessions.find_one({"id": sid}, {"_id": 0})
+    result = clean(updated)
+    await mgr.broadcast(f"session:{sid}", {"type": "session_updated", "session": result})
     await mgr.broadcast("lobby", {"type": "session_updated", "session": result})
     return result
 
