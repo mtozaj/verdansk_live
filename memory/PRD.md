@@ -95,6 +95,15 @@ Build a real-time coordination website for Call of Duty: Warzone private matches
 - Backend: 100% (20/20 including regression)
 - Frontend: 100%
 
+### Phase 7 (2026-02-XX) - Session Sharing with Rich Preview
+- [x] New backend endpoint `GET /api/share/{sid}` serves HTML with dynamic OG tags
+- [x] OG title: `Join: "Session Title" — X/50 in lobby`
+- [x] OG description: region, host, status, interested/joining counts
+- [x] Static OG image (existing Rally Point branding)
+- [x] Auto-redirects browsers to `/session/{id}` via meta refresh
+- [x] "Share" button on session page copies the share link
+- [x] HTML-escaped user content to prevent XSS
+
 ## Prioritized Backlog
 ### P1
 - Session sharing link with rich preview

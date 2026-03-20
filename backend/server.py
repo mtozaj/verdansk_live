@@ -792,6 +792,71 @@ async def get_stats():
     }
 
 
+@api_router.get("/share/{sid}")
+async def share_session_og(sid: str):
+    """Serve HTML with dynamic OG tags for social previews, then redirect browsers to the session page."""
+    from fastapi.responses import HTMLResponse
+
+    s = await db.sessions.find_one({"id": sid}, {"_id": 0})
+    if not s:
+        return HTMLResponse(
+            f'<html><head><meta http-equiv="refresh" content="0;url=/session/{sid}"></head></html>'
+        )
+
+    cleaned = clean(s)
+    from html import escape as html_escape
+
+    title = html_escape(cleaned.get("title", "Warzone Session"))
+    region = html_escape(cleaned.get("region", ""))
+    host = html_escape(cleaned.get("host_name", ""))
+    in_lobby = cleaned.get("in_lobby_count", 0)
+    min_p = cleaned.get("min_players", 50)
+    interested = cleaned.get("interested_count", 0)
+    joining = cleaned.get("joining_count", 0)
+    status = cleaned.get("status", "filling")
+
+    status_labels = {
+        "filling": "Filling Up",
+        "almost_full": "Almost Full",
+        "starting": "Match Starting Soon",
+        "in_progress": "Match Started",
+        "ended": "Ended",
+    }
+    status_label = status_labels.get(status, "Active")
+
+    og_title = f'Join: "{title}" — {in_lobby}/{min_p} in lobby'
+    og_desc = f"{region} · Hosted by {host} · {status_label} · {interested} interested, {joining} joining"
+    base_url = os.environ.get("BASE_URL", os.environ.get("FRONTEND_URL", ""))
+    if not base_url:
+        # Derive from CORS or known preview URL patterns
+        cors = os.environ.get("CORS_ORIGINS", "")
+        if cors and cors != "*":
+            base_url = cors.split(",")[0].strip()
+    og_image = f"{base_url}/og-image.png?v=2" if base_url else ""
+    canonical = f"{base_url}/session/{sid}" if base_url else f"/session/{sid}"
+
+    html = f"""<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{og_title}">
+<meta property="og:description" content="{og_desc}">
+<meta property="og:site_name" content="Rally Point">
+<meta property="og:url" content="{canonical}">
+{"<meta property='og:image' content='" + og_image + "'>" if og_image else ""}
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{og_title}">
+<meta name="twitter:description" content="{og_desc}">
+{"<meta name='twitter:image' content='" + og_image + "'>" if og_image else ""}
+<title>{og_title} — Rally Point</title>
+<meta http-equiv="refresh" content="0;url=/session/{sid}">
+</head><body></body></html>"""
+
+    return HTMLResponse(html)
+
+
 # ===== WebSocket =====
 
 @api_router.websocket("/ws/lobby")

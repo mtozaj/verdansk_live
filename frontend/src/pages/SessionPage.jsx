@@ -23,6 +23,7 @@ import {
   Pencil,
   Plus,
   Minus,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -768,7 +769,7 @@ export default function SessionPage() {
                   {status.label}
                 </Badge>
               </div>
-              <div className="flex flex-wrap gap-4 text-xs font-mono text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   {session.region}
@@ -781,6 +782,18 @@ export default function SessionPage() {
                   <Clock className="w-3 h-3" />
                   {timeAgo(session.created_at)}
                 </div>
+                <button
+                  onClick={() => {
+                    const shareUrl = `${window.location.origin}/api/share/${id}`;
+                    navigator.clipboard.writeText(shareUrl);
+                    toast.success("Share link copied!");
+                  }}
+                  className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors ml-auto"
+                  data-testid="share-session-btn"
+                >
+                  <Share2 className="w-3 h-3" />
+                  <span className="uppercase tracking-wider">Share</span>
+                </button>
               </div>
             </div>
 
