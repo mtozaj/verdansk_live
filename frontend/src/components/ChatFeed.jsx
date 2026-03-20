@@ -101,6 +101,7 @@ export const ChatFeed = ({
   const [mentionFilter, setMentionFilter] = useState("");
   const [mentionIndex, setMentionIndex] = useState(0);
   const [mentionStartPos, setMentionStartPos] = useState(-1);
+  const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const mentionListRef = useRef(null);
@@ -240,14 +241,19 @@ export const ChatFeed = ({
   const handleSend = async (e) => {
     e.preventDefault();
     const msg = text.trim();
-    if (!msg) return;
-    const success = await onSend(msg);
-    if (success) {
-      setText("");
-      setShowMentions(false);
-      setMentionFilter("");
-      setMentionStartPos(-1);
-      inputRef.current?.focus();
+    if (!msg || sending) return;
+    setSending(true);
+    try {
+      const success = await onSend(msg);
+      if (success) {
+        setText("");
+        setShowMentions(false);
+        setMentionFilter("");
+        setMentionStartPos(-1);
+        inputRef.current?.focus();
+      }
+    } finally {
+      setSending(false);
     }
   };
 
@@ -382,7 +388,7 @@ export const ChatFeed = ({
             type="submit"
             size="icon"
             className="h-8 w-8 shrink-0"
-            disabled={!text.trim()}
+            disabled={!text.trim() || sending}
             data-testid="chat-send-btn"
             onMouseDown={(e) => e.preventDefault()}
           >

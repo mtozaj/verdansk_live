@@ -376,6 +376,24 @@ export default function SessionPage() {
 
   const { send: wsSend, connected: wsConnected } = useWebSocket(`/api/ws/session/${id}`, handleWs);
 
+  // Re-fetch chat messages after WebSocket reconnects to fill any gaps
+  const wsWasConnectedRef = useRef(false);
+  useEffect(() => {
+    if (wsConnected) {
+      if (wsWasConnectedRef.current) {
+        // This is a reconnect (was connected before, disconnected, now connected again)
+        axios.get(`${API}/sessions/${id}/chat`).then((res) => {
+          setMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id));
+            const newMsgs = res.data.filter((m) => !existingIds.has(m.id));
+            return newMsgs.length > 0 ? [...prev, ...newMsgs] : prev;
+          });
+        }).catch(() => {});
+      }
+      wsWasConnectedRef.current = true;
+    }
+  }, [wsConnected, id]);
+
   // Host heartbeat — send every 60s while the host has the page open
   useEffect(() => {
     if (!wsConnected) return;
@@ -472,6 +490,14 @@ export default function SessionPage() {
       return null;
     }
   }, [id, nickname, playerId]);
+
+  // Clear auto-interest lock when user is removed from session (e.g. stale cleanup)
+  useEffect(() => {
+    if (!session || loading || !playerId) return;
+    if (!session.players?.some((p) => p.player_id === playerId)) {
+      autoInterestAttemptRef.current = "";
+    }
+  }, [session, loading, playerId]);
 
   useEffect(() => {
     if (!session || loading) return;
@@ -598,6 +624,23 @@ export default function SessionPage() {
     const maxPlayers = session?.max_players ?? 152;
     const newExternal = Math.max(0, Math.min(currentExternal + delta, maxPlayers - websiteCount));
     if (newExternal === currentExternal) return;
+    try {
+      const res = await axios.patch(
+        `${API}/sessions/${id}/external-count?host_id=${playerId}`,
+        { external_in_lobby: newExternal }
+      );
+      setSession(res.data);
+    } catch {
+      toast.error("Failed to update lobby count");
+    }
+  };
+
+  const setExternalCountAbsolute = async (totalInLobby) => {
+    const websiteCount = session?.website_in_lobby_count ?? 0;
+    const maxPlayers = session?.max_players ?? 152;
+    const clamped = Math.max(websiteCount, Math.min(totalInLobby, maxPlayers));
+    const newExternal = clamped - websiteCount;
+    if (newExternal === (session?.external_in_lobby ?? 0)) return;
     try {
       const res = await axios.patch(
         `${API}/sessions/${id}/external-count?host_id=${playerId}`,
@@ -894,9 +937,25 @@ export default function SessionPage() {
                           >
                             <Minus className="w-3 h-3" />
                           </Button>
-                          <span className="font-mono text-sm text-foreground min-w-[60px] text-center" data-testid="external-count-display">
-                            {session.in_lobby_count} <span className="text-muted-foreground text-[10px]">/ {session.max_players}</span>
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={session.website_in_lobby_count ?? 0}
+                              max={session.max_players ?? 152}
+                              value={session.in_lobby_count}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                if (!isNaN(val)) setExternalCountAbsolute(val);
+                              }}
+                              onBlur={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                if (!isNaN(val)) setExternalCountAbsolute(val);
+                              }}
+                              className="w-12 h-8 bg-transparent border border-transparent hover:border-white/10 focus:border-primary/50 focus:outline-none rounded text-center font-mono text-sm text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              data-testid="external-count-display"
+                            />
+                            <span className="text-muted-foreground text-[10px] font-mono">/ {session.max_players}</span>
+                          </div>
                           <Button
                             onClick={() => updateExternalCount(1)}
                             variant="outline"
