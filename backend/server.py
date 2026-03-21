@@ -798,10 +798,9 @@ async def share_session_og(sid: str, request: Request):
     from fastapi.responses import HTMLResponse
     from html import escape as html_escape
 
-    # Build base URL from the incoming request so it works in every environment
-    scheme = request.headers.get("x-forwarded-proto", "https")
-    host_header = request.headers.get("host", "")
-    base_url = f"{scheme}://{host_header}" if host_header else ""
+    # Use public base URL for OG tags — reverse proxies often pass internal hostnames
+    public_base = os.environ.get("PUBLIC_BASE_URL", "https://verdansk.live")
+    base_url = public_base.rstrip("/")
 
     s = await db.sessions.find_one({"id": sid}, {"_id": 0})
     if not s:
