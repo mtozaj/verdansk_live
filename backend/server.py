@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Query
+from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Query, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -793,66 +793,63 @@ async def get_stats():
 
 
 @api_router.get("/share/{sid}")
-async def share_session_og(sid: str):
+async def share_session_og(sid: str, request: Request):
     """Serve HTML with dynamic OG tags for social previews, then redirect browsers to the session page."""
     from fastapi.responses import HTMLResponse
+    from html import escape as html_escape
+
+    # Build base URL from the incoming request so it works in every environment
+    scheme = request.headers.get("x-forwarded-proto", "https")
+    host_header = request.headers.get("host", "")
+    base_url = f"{scheme}://{host_header}" if host_header else ""
 
     s = await db.sessions.find_one({"id": sid}, {"_id": 0})
     if not s:
+        redirect_url = f"{base_url}/session/{sid}" if base_url else f"/session/{sid}"
         return HTMLResponse(
-            f'<html><head><meta http-equiv="refresh" content="0;url=/session/{sid}"></head></html>'
+            f'<html><head><meta http-equiv="refresh" content="0;url={redirect_url}"></head></html>'
         )
 
     cleaned = clean(s)
-    from html import escape as html_escape
 
     title = html_escape(cleaned.get("title", "Warzone Session"))
     region = html_escape(cleaned.get("region", ""))
-    host = html_escape(cleaned.get("host_name", ""))
+    host_name = html_escape(cleaned.get("host_name", ""))
     in_lobby = cleaned.get("in_lobby_count", 0)
     min_p = cleaned.get("min_players", 50)
-    interested = cleaned.get("interested_count", 0)
-    joining = cleaned.get("joining_count", 0)
-    status = cleaned.get("status", "filling")
 
-    status_labels = {
-        "filling": "Filling Up",
-        "almost_full": "Almost Full",
-        "starting": "Match Starting Soon",
-        "in_progress": "Match Started",
-        "ended": "Ended",
-    }
-    status_label = status_labels.get(status, "Active")
-
-    og_title = f'Join: "{title}" — {in_lobby}/{min_p} in lobby'
-    og_desc = f"{in_lobby}/{min_p} in lobby · {region} · Hosted by {host}"
-    base_url = os.environ.get("BASE_URL", os.environ.get("FRONTEND_URL", ""))
-    if not base_url:
-        # Derive from CORS or known preview URL patterns
-        cors = os.environ.get("CORS_ORIGINS", "")
-        if cors and cors != "*":
-            base_url = cors.split(",")[0].strip()
+    og_title = f"Join: {title} \u2014 {in_lobby}/{min_p} in lobby"
+    og_desc = f"{in_lobby}/{min_p} in lobby \u00b7 {region} \u00b7 Hosted by {host_name}"
     og_image = f"{base_url}/og-image.png?v=2" if base_url else ""
-    canonical = f"{base_url}/session/{sid}" if base_url else f"/session/{sid}"
+    og_url = f"{base_url}/session/{sid}" if base_url else f"/session/{sid}"
+    session_url = f"{base_url}/session/{sid}" if base_url else f"/session/{sid}"
 
-    html = f"""<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8">
-<meta property="og:type" content="website">
-<meta property="og:title" content="{og_title}">
-<meta property="og:description" content="{og_desc}">
-<meta property="og:site_name" content="Rally Point">
-<meta property="og:url" content="{canonical}">
-{"<meta property='og:image' content='" + og_image + "'>" if og_image else ""}
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{og_title}">
-<meta name="twitter:description" content="{og_desc}">
-{"<meta name='twitter:image' content='" + og_image + "'>" if og_image else ""}
-<title>{og_title} — Rally Point</title>
-<meta http-equiv="refresh" content="0;url=/session/{sid}">
-</head><body></body></html>"""
+    image_tags = ""
+    if og_image:
+        image_tags = (
+            f'<meta property="og:image" content="{og_image}">\n'
+            f'<meta property="og:image:width" content="1200">\n'
+            f'<meta property="og:image:height" content="630">\n'
+            f'<meta name="twitter:image" content="{og_image}">'
+        )
+
+    html = (
+        '<!DOCTYPE html>\n'
+        '<html><head>\n'
+        '<meta charset="utf-8">\n'
+        f'<meta property="og:type" content="website">\n'
+        f'<meta property="og:title" content="{og_title}">\n'
+        f'<meta property="og:description" content="{og_desc}">\n'
+        f'<meta property="og:site_name" content="Rally Point">\n'
+        f'<meta property="og:url" content="{og_url}">\n'
+        f'{image_tags}\n'
+        f'<meta name="twitter:card" content="summary_large_image">\n'
+        f'<meta name="twitter:title" content="{og_title}">\n'
+        f'<meta name="twitter:description" content="{og_desc}">\n'
+        f'<title>{og_title} — Rally Point</title>\n'
+        f'<meta http-equiv="refresh" content="0;url={session_url}">\n'
+        '</head><body></body></html>'
+    )
 
     return HTMLResponse(html)
 
