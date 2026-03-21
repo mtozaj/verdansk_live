@@ -432,7 +432,18 @@ export default function SessionPage() {
 
   const copyCode = () => {
     if (session?.match_code) {
-      navigator.clipboard.writeText(session.match_code);
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = session.match_code;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch {
+        navigator.clipboard.writeText(session.match_code).catch(() => {});
+      }
       setCopied(true);
       setCodeChanged(false);
       toast.success("Code copied!");
@@ -785,8 +796,22 @@ export default function SessionPage() {
                 <button
                   onClick={() => {
                     const shareUrl = `${window.location.origin}/api/share/${id}`;
-                    navigator.clipboard.writeText(shareUrl);
-                    toast.success("Share link copied!");
+                    try {
+                      const ta = document.createElement("textarea");
+                      ta.value = shareUrl;
+                      ta.style.position = "fixed";
+                      ta.style.opacity = "0";
+                      document.body.appendChild(ta);
+                      ta.select();
+                      document.execCommand("copy");
+                      document.body.removeChild(ta);
+                      toast.success("Share link copied!");
+                    } catch {
+                      navigator.clipboard.writeText(shareUrl).then(
+                        () => toast.success("Share link copied!"),
+                        () => toast.error("Could not copy link")
+                      );
+                    }
                   }}
                   className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors ml-auto"
                   data-testid="share-session-btn"
