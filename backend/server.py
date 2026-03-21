@@ -821,7 +821,7 @@ async def share_session_og(sid: str, request: Request):
     og_title = f"Join: {title} \u2014 {in_lobby}/{min_p} in lobby"
     og_desc = f"{in_lobby}/{min_p} in lobby \u00b7 {region} \u00b7 Hosted by {host_name}"
     og_image = f"{base_url}/og-image.png?v=2" if base_url else ""
-    og_url = f"{base_url}/session/{sid}" if base_url else f"/session/{sid}"
+    og_url = f"{base_url}/api/share/{sid}" if base_url else f"/api/share/{sid}"
     session_url = f"{base_url}/session/{sid}" if base_url else f"/session/{sid}"
 
     image_tags = ""
@@ -847,8 +847,9 @@ async def share_session_og(sid: str, request: Request):
         f'<meta name="twitter:title" content="{og_title}">\n'
         f'<meta name="twitter:description" content="{og_desc}">\n'
         f'<title>{og_title} — Rally Point</title>\n'
-        f'<meta http-equiv="refresh" content="0;url={session_url}">\n'
-        '</head><body></body></html>'
+        '</head><body>\n'
+        f'<script>window.location.replace("{session_url}")</script>\n'
+        '</body></html>'
     )
 
     return HTMLResponse(html)
