@@ -817,7 +817,7 @@ async def share_session_og(sid: str, request: Request):
     in_lobby = cleaned.get("in_lobby_count", 0)
     min_p = cleaned.get("min_players", 50)
 
-    og_title = f"Join: {title} \u2014 {in_lobby}/{min_p} in lobby"
+    og_title = f"Join: {title}"
     og_desc = f"{in_lobby}/{min_p} in lobby \u00b7 {region} \u00b7 Hosted by {host_name}"
     og_image = f"{base_url}/og-image.png?v=2" if base_url else ""
     og_url = f"{base_url}/api/share/{sid}" if base_url else f"/api/share/{sid}"
